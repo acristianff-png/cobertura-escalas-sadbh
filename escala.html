@@ -118,7 +118,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13
           </div>
           <div class="field">
             <label>Categoria *</label>
-            <select id="f-cat" onchange="atualizarFeristas()">
+            <select id="f-cat">
               <option value="">Selecione...</option>
               <option value="medico">M&#233;dico</option>
               <option value="enfermeiro">Enfermeiro</option>
@@ -144,7 +144,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13
           </div>
           <div class="field">
             <label>Profissional *</label>
-            <select id="f-prof"><option value="">Selecione a categoria primeiro</option></select>
+            <input type="text" id="f-prof" placeholder="Nome do profissional e lota&#231;&#227;o (ex: Dr. Silva &mdash; UBS Barreiro)">
           </div>
         </div>
         <div class="field">
@@ -211,7 +211,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13
     <input type="hidden" id="modal-cat">
     <div class="field">
       <label>Profissional</label>
-      <select id="modal-prof"><option value="">Selecione...</option></select>
+      <input type="text" id="modal-prof" placeholder="Nome e lota&#231;&#227;o do profissional">
     </div>
     <div class="field">
       <label>Tipo</label>
@@ -269,13 +269,13 @@ function weekValueParaISO(v){
   return seg.toISOString().split('T')[0];
 }
 
-let semanaAtual=null,todasAusencias=[],feristas=[];
+let semanaAtual=null,todasAusencias=[];
 
 async function init(){
   semanaAtual=semanaParaISO(new Date());
   document.getElementById('semana-picker').value=dataParaWeekValue(semanaAtual);
   atualizarLabelSemana();
-  await Promise.all([carregarEquipes(),carregarFeristas()]);
+  await carregarEquipes();
   await carregarAusencias();
 }
 
@@ -295,18 +295,7 @@ function atualizarLabelSemana(){
 async function carregarEquipes(){
   try{const r=await apiGet({acao:'equipes_lista'});if(r.ok){const sel=document.getElementById('f-equipe');r.equipes.forEach(eq=>{const o=document.createElement('option');o.value=eq;o.textContent=eq;sel.appendChild(o);});}}catch(e){}
 }
-async function carregarFeristas(){
-  try{const r=await apiGet({acao:'listar_feristas'});if(r.ok)feristas=r.feristas||[];}catch(e){}
-}
 
-function atualizarFeristas(){
-  const cat=document.getElementById('f-cat').value;
-  const sel=document.getElementById('f-prof');
-  sel.innerHTML='<option value="">Selecione...</option>';
-  if(!cat)return;
-  const lista=feristas.filter(f=>f.cat===cat&&f.disp!=='NAO');
-  lista.forEach(f=>{const o=document.createElement('option');o.value=f.nome;o.textContent=f.nome;sel.appendChild(o);});
-}
 
 async function carregarAusencias(){
   document.getElementById('lista-tbody').innerHTML='<tr><td colspan="7" class="empty">Carregando...</td></tr>';
@@ -364,10 +353,8 @@ async function salvar(){
 }
 
 function limpar(){
-  ['f-equipe','f-cat','f-turno','f-prof'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-motivo').value='';
+  ['f-equipe','f-cat','f-turno','f-prof','f-motivo'].forEach(id=>document.getElementById(id).value='');
   document.querySelectorAll('#dias-checks input').forEach(c=>c.checked=false);
-  document.getElementById('f-prof').innerHTML='<option value="">Selecione a categoria primeiro</option>';
 }
 
 function abrirModal(a){
@@ -376,10 +363,7 @@ function abrirModal(a){
   document.getElementById('modal-dkey').value=a.data||'';
   document.getElementById('modal-cat').value=a.categoria||'';
   document.getElementById('modal-sub').textContent=(a.equipe||'')+' \u2014 '+(a.turno||'')+' \u2014 '+(a.data||'')+' \u2014 '+(a.categoria||'');
-  const sel=document.getElementById('modal-prof');
-  sel.innerHTML='<option value="">Selecione...</option>';
-  const cat=a.categoria||'';
-  feristas.filter(f=>f.cat===cat&&f.disp!=='NAO').forEach(f=>{const o=document.createElement('option');o.value=f.nome;o.textContent=f.nome;sel.appendChild(o);});
+  document.getElementById('modal-prof').value='';
   document.getElementById('modal-overlay').classList.add('open');
 }
 function fecharModal(){document.getElementById('modal-overlay').classList.remove('open');}
@@ -392,7 +376,7 @@ async function confirmarModal(){
   const prof=document.getElementById('modal-prof').value;
   const tipo=document.getElementById('modal-tipo').value;
   const motivo=document.getElementById('modal-motivo').value;
-  if(!prof){alert('Selecione um profissional.');return;}
+  if(!prof){alert('Informe o nome do profissional.');return;}
   const btn=document.getElementById('modal-btn');const btxt=document.getElementById('modal-btn-txt');
   btn.disabled=true;btxt.innerHTML='<span class="spinner"></span>';
   try{

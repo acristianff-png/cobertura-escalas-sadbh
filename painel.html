@@ -332,7 +332,7 @@ async function inicializar(){
 }
 
 async function carregarSemanas(){
-  try{const r=await apiGet({acao:'semanas'});if(r.ok){semanas=r.semanas;if(semanas.length&&!semanaAtual)semanaAtual=semanas[0].inicio;}}catch(e){}
+  try{const r=await apiGet({acao:'semanas'});if(r.ok)semanas=r.semanas;}catch(e){}
   if(!semanaAtual)semanaAtual=semanaParaISO(new Date());
   const p=document.getElementById('semana-picker');if(p)p.value=dataParaWeekValue(semanaAtual);
 }
@@ -466,8 +466,9 @@ function renderGestor(r){
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px">'+
       '<div class="card" style="margin-bottom:0">'+
         '<div class="card-head"><div class="card-title">Distribui&#231;&#227;o de coberturas</div></div>'+
-        '<div class="card-body" style="padding:14px;display:flex;justify-content:center;align-items:center">'+
-          '<div style="position:relative;width:190px;height:190px"><canvas id="chart-status"></canvas></div>'+
+        '<div class="card-body" style="padding:14px">'+
+          '<div style="position:relative;width:180px;height:180px;margin:auto"><canvas id="chart-status"></canvas></div>'+
+          '<div id="chart-status-leg" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:10px"></div>'+
         '</div>'+
       '</div>'+
       '<div class="card" style="margin-bottom:0">'+
@@ -491,8 +492,10 @@ function renderGestor(r){
         backgroundColor:['#2e7d4f','#d95f1a','#6d3aad','#c0392b'],
         borderWidth:2,borderColor:'#fff'}]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
   });
+  const legEl=document.getElementById('chart-status-leg');
+  if(legEl)legEl.innerHTML=[['Cobertura','#2e7d4f'],['Apoio','#d95f1a'],['Extra','#6d3aad'],['Descoberto','#c0392b']].map(([l,c])=>`<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0"></div>${l}</div>`).join('');
 
   chartCat=new Chart(document.getElementById('chart-cat'),{
     type:'bar',
@@ -555,6 +558,16 @@ function showTab(tab){
   if(tab==='gestor')carregarGestor();
 }
 
+function abreviarEquipe(local,turno){
+  if(!local)return'';
+  const ign=['equipe','de','da','do','das','dos','e','a'];
+  const partes=local.split(/[\s\-\/]+/).filter(p=>p.length&&!ign.includes(p.toLowerCase()));
+  const primPalavra=partes.find(p=>!/^\d+$/.test(p))||'';
+  const num=partes.find(p=>/^\d+$/.test(p))||'';
+  const t=turno?(turno.toUpperCase().startsWith('M')?'M':'T'):'';
+  return(primPalavra[0]||'').toUpperCase()+num+t;
+}
+
 // ── Feristas: vista mensal ────────────────────────────────────────────────────
 let ferVistaAtual='semana',dadosFeristasMensal=null,ferMes=null;
 
@@ -596,7 +609,7 @@ async function carregarFeristasMensal(){
         const iso=dDate.toISOString().split('T')[0];
         if(dDate.getMonth()+1!==mes||dDate.getFullYear()!==ano)continue;
         const slots=f.dias&&f.dias[di]?f.dias[di].slots:[];
-        agFer[f.nome][iso]=slots.length?slots[0].tipo:'livre';
+        agFer[f.nome][iso]=slots.length?{tipo:slots[0].tipo,local:slots[0].local||'',turno:slots[0].turno||''}:{tipo:'livre'};
       }
     });
   });
@@ -654,12 +667,15 @@ function renderFeristasMensal(){
   const rows=lista.map(n=>{
     const f=agFer[n];
     const cells=diasUteis.map(iso=>{
-      const s=f[iso]||'livre';
+      const raw=f[iso]||{tipo:'livre'};
+      const s=typeof raw==='string'?raw:(raw.tipo||'livre');
       const bg=legCores[s]||'#e8eaf0';
       const isSemAtual=semAtualDias.has(iso);
       const brd=isSemAtual?'2px solid var(--green)':'2px solid transparent';
-      const lbl=`${n} — ${new Date(iso+'T12:00:00').getDate()}/${new Date(iso+'T12:00:00').getMonth()+1}: ${s}`;
-      return`<td style="padding:1px 1px;${isSemAtual?'background:var(--green-light);':''}"><div title="${lbl}" style="width:22px;height:18px;border-radius:3px;background:${bg};border:${brd};opacity:${s==='livre'?'0.6':'1'}"></div></td>`;
+      const abr=(s!=='livre'&&raw.local)?abreviarEquipe(raw.local,raw.turno):'';
+      const dLabel=new Date(iso+'T12:00:00');
+      const lbl=`${n} — ${dLabel.getDate()}/${dLabel.getMonth()+1}: ${s}${raw.local?' ('+raw.local+')':''}`;
+      return`<td style="padding:1px 1px;${isSemAtual?'background:var(--green-light);':''}"><div title="${lbl}" style="width:22px;height:18px;border-radius:3px;background:${bg};border:${brd};opacity:${s==='livre'?'0.55':'1'};display:flex;align-items:center;justify-content:center">${abr?`<span style="font-size:6.5px;font-weight:700;color:rgba(0,0,0,.65);line-height:1;letter-spacing:-.2px">${abr}</span>`:''}</div></td>`;
     }).join('');
     const catCls=f.cat==='medico'?'med':'enf';
     return`<tr><td style="white-space:nowrap;padding:3px 12px 3px 0;min-width:160px">
