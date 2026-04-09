@@ -21,7 +21,8 @@
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
 .app{max-width:1020px;margin:0 auto;padding:0 0 32px}
-.topbar{background:var(--green);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.topbar{background:var(--green);padding:0 20px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:52px}
+.topbar-right{display:flex;align-items:center;justify-content:flex-end;gap:6px}
 .topbar-left{display:flex;align-items:center;gap:12px}
 .topbar-icon{width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center}
 .topbar-title{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px}
@@ -29,7 +30,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13
 .topbar-semana{display:flex;align-items:center;gap:8px}
 .topbar-semana button{width:24px;height:24px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);border-radius:5px;cursor:pointer;font-size:12px;color:#fff}
 #semana-picker{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:3px 8px;font-size:12px;color:#fff;font-family:inherit;cursor:pointer;outline:none}
-.menu-gestor{display:none;align-items:center;gap:6px}
+.menu-gestor{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
 .menu-gestor button{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer;font-family:inherit}
 .menu-gestor button:hover{background:rgba(255,255,255,.22)}
 .topbar-logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:4px 10px;font-size:11px;color:#fff;cursor:pointer;font-family:inherit}
@@ -170,11 +171,13 @@ tbody tr:hover td{background:#fafbfc}
       <input type="week" id="semana-picker" onchange="selecionarSemana(this.value)">
       <button onclick="navegarSemana(1)">&#8250;</button>
     </div>
-    <div class="menu-gestor" id="menu-gestor">
-      <button onclick="location.href='ausencias.html'">Aus&#234;ncias</button>
-      <button onclick="location.href='escala.html'">Escala</button>
-      <button onclick="location.href='acessos.html'">Acessos</button>
-      <button onclick="location.href='feristas.html'">Feristas</button>
+    <div class="topbar-right">
+      <div class="menu-gestor" id="menu-gestor">
+        <button onclick="location.href='ausencias.html'">Aus&#234;ncias</button>
+        <button onclick="location.href='escala.html'">Escala</button>
+        <button onclick="location.href='feristas.html'">Feristas</button>
+        <button onclick="location.href='acessos.html'">Acessos</button>
+      </div>
     </div>
   </div>
   <div class="subbar">
@@ -256,11 +259,14 @@ tbody tr:hover td{background:#fafbfc}
       <p class="section-ttl">An&#225;lise da semana</p>
       <div id="gestor-insights"></div>
       <div class="divider"></div>
-      <p class="section-ttl">Aus&#234;ncias n&#227;o cobertas</p>
-      <div id="nao-cobertos"></div>
-      <div class="divider"></div>
       <p class="section-ttl">Mapa mensal de coberturas</p>
       <div id="mapa-mensal-wrap"></div>
+      <div class="divider"></div>
+      <p class="section-ttl">Mapa de regionais</p>
+      <div id="mapa-regional-wrap"></div>
+      <div class="divider"></div>
+      <p class="section-ttl">Aus&#234;ncias n&#227;o cobertas</p>
+      <div id="nao-cobertos"></div>
     </div>
   </div>
 </div>
@@ -319,7 +325,7 @@ let dadosEscala=null,dadosFeristas=null,dadosTecnicos=null,semanaAtual=null,sema
 async function inicializar(){
   try{
     const a=await apiGet({acao:'meu_acesso'});
-    if(a&&a.ok&&a.perfil==='gestor'){isGestor=true;document.getElementById('menu-gestor').style.display='flex';}
+    if(a&&a.ok&&a.perfil==='gestor')isGestor=true;
   }catch(e){}
   await carregarSemanas();
   await Promise.all([carregarEscala(),carregarFeristas(),carregarTecnicos()]);
@@ -461,7 +467,7 @@ function renderGestor(r){
       '<div class="card" style="margin-bottom:0">'+
         '<div class="card-head"><div class="card-title">Distribui&#231;&#227;o de coberturas</div></div>'+
         '<div class="card-body" style="padding:14px;display:flex;justify-content:center;align-items:center">'+
-          '<canvas id="chart-status" style="max-width:200px;max-height:200px"></canvas>'+
+          '<div style="position:relative;width:190px;height:190px"><canvas id="chart-status"></canvas></div>'+
         '</div>'+
       '</div>'+
       '<div class="card" style="margin-bottom:0">'+
@@ -485,7 +491,7 @@ function renderGestor(r){
         backgroundColor:['#2e7d4f','#d95f1a','#6d3aad','#c0392b'],
         borderWidth:2,borderColor:'#fff'}]
     },
-    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}}}
   });
 
   chartCat=new Chart(document.getElementById('chart-cat'),{
@@ -738,6 +744,7 @@ async function carregarMapaMensal(){
   });
   mapaData={agregado,equipeOrder,ano,mes};
   renderMapaMensal();
+  renderMapaRegional();
 }
 
 function renderMapaMensal(){
@@ -800,6 +807,82 @@ function navegarMapa(dir){
   mapaMes={ano,mes};carregarMapaMensal();
 }
 function navegarMapaHoje(){mapaMes=getMesAtual();carregarMapaMensal();}
+
+// ── Mapa de regionais ─────────────────────────────────────────────────────────
+const REGIONAIS={
+  'venda-nova':{nome:'Venda Nova',cx:318,cy:60,d:'M232,10 L408,10 L420,32 L412,108 L300,115 L254,94 L234,52 Z'},
+  'norte':{nome:'Norte',cx:168,cy:83,d:'M92,28 L232,10 L234,52 L254,94 L224,132 L158,142 L102,128 L88,75 Z'},
+  'nordeste':{nome:'Nordeste',cx:355,cy:170,d:'M298,115 L412,108 L426,130 L420,210 L368,232 L292,216 L278,168 Z'},
+  'pampulha':{nome:'Pampulha',cx:198,cy:160,d:'M102,128 L158,142 L224,132 L254,94 L298,115 L278,168 L258,194 L188,200 L132,188 L118,158 Z'},
+  'noroeste':{nome:'Noroeste',cx:62,cy:128,d:'M12,42 L92,28 L88,75 L102,128 L118,158 L80,194 L12,194 Z'},
+  'leste':{nome:'Leste',cx:342,cy:280,d:'M258,194 L278,168 L292,216 L368,232 L420,210 L428,268 L412,355 L338,378 L272,342 L258,275 Z'},
+  'oeste':{nome:'Oeste',cx:72,cy:248,d:'M12,200 L80,194 L118,158 L132,188 L140,222 L140,285 L100,315 L12,294 Z'},
+  'centro-sul':{nome:'Centro-Sul',cx:198,cy:290,d:'M132,188 L188,200 L258,194 L258,275 L272,342 L250,372 L195,378 L138,360 L128,305 L140,285 L140,222 Z'},
+  'barreiro':{nome:'Barreiro',cx:76,cy:372,d:'M12,294 L100,315 L128,305 L138,360 L142,418 L78,448 L24,422 L12,360 Z'}
+};
+
+function getRegionalDoEquipe(nome){
+  const n=nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const mapa=[
+    ['venda nova','venda-nova'],['vendanova','venda-nova'],['vn ','venda-nova'],
+    ['nordeste','nordeste'],
+    ['noroeste','noroeste'],
+    ['norte','norte'],
+    ['pampulha','pampulha'],
+    ['leste','leste'],
+    ['centro-sul','centro-sul'],['centrosul','centro-sul'],['centro sul','centro-sul'],
+    ['oeste','oeste'],
+    ['barreiro','barreiro']
+  ];
+  for(const[kw,reg]of mapa){if(n.includes(kw))return reg;}
+  return null;
+}
+
+function renderMapaRegional(){
+  const wrap=document.getElementById('mapa-regional-wrap');if(!wrap)return;
+  const statusReg={};Object.keys(REGIONAIS).forEach(r=>statusReg[r]='sem-dados');
+  if(mapaData&&mapaData.agregado){
+    const{agregado,equipeOrder}=mapaData;
+    equipeOrder.forEach(eq=>{
+      const reg=getRegionalDoEquipe(eq);if(!reg)return;
+      const dias=agregado[eq]||{};
+      let pior='verde';
+      Object.values(dias).forEach(d=>{
+        if(!d)return;
+        ['med','enf'].forEach(cat=>{
+          const s=d[cat];
+          if(s==='r')pior='vermelho';
+          else if(s==='l'&&pior!=='vermelho')pior='laranja';
+        });
+      });
+      const atual=statusReg[reg];
+      if(atual==='sem-dados')statusReg[reg]=pior;
+      else if(pior==='vermelho')statusReg[reg]='vermelho';
+      else if(pior==='laranja'&&atual==='verde')statusReg[reg]='laranja';
+    });
+  }
+  const cores={
+    'verde':{fill:'#c8eedd',stroke:'#2e7d4f',text:'#1a5c35'},
+    'laranja':{fill:'#fde3c8',stroke:'#d95f1a',text:'#7a3010'},
+    'vermelho':{fill:'#fbd5d3',stroke:'#c0392b',text:'#7a1a15'},
+    'sem-dados':{fill:'#eaecf2',stroke:'#b0bace',text:'#6b7a96'}
+  };
+  const paths=Object.entries(REGIONAIS).map(([key,reg])=>{
+    const c=cores[statusReg[key]];
+    const label=statusReg[key]==='verde'?'Sem aus\u00eancias':statusReg[key]==='laranja'?'Aus\u00eancias cobertas':statusReg[key]==='vermelho'?'Aus\u00eancias sem cobertura':'Sem dados';
+    return`<path d="${reg.d}" fill="${c.fill}" stroke="${c.stroke}" stroke-width="1.5" stroke-linejoin="round" style="cursor:default"><title>${reg.nome}: ${label}</title></path>
+<text x="${reg.cx}" y="${reg.cy}" text-anchor="middle" dominant-baseline="middle" style="font-size:9px;font-weight:700;fill:${c.text};font-family:sans-serif;pointer-events:none">${reg.nome}</text>`;
+  }).join('');
+  const legHTML=`<div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="leg"><div class="leg-dot" style="background:#c8eedd;border:1px solid #2e7d4f"></div>Sem aus&#234;ncias</div>
+    <div class="leg"><div class="leg-dot" style="background:#fde3c8;border:1px solid #d95f1a"></div>Coberto</div>
+    <div class="leg"><div class="leg-dot" style="background:#fbd5d3;border:1px solid #c0392b"></div>Descoberto</div>
+    <div class="leg"><div class="leg-dot" style="background:#eaecf2;border:1px solid #b0bace"></div>Sem dados</div>
+  </div>`;
+  wrap.innerHTML=legHTML+`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;justify-content:center">
+    <svg viewBox="0 0 440 460" style="width:100%;max-width:380px;height:auto">${paths}</svg>
+  </div>`;
+}
 
 inicializar();
 </script>
