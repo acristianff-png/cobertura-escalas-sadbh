@@ -323,11 +323,11 @@ const DIAS=['Seg','Ter','Qua','Qui','Sex'];
 let dadosEscala=null,dadosFeristas=null,dadosTecnicos=null,semanaAtual=null,semanas=[],isGestor=false;
 
 async function inicializar(){
-  try{
-    const a=await apiGet({acao:'meu_acesso'});
-    if(a&&a.ok&&a.perfil==='gestor')isGestor=true;
-  }catch(e){}
-  await carregarSemanas();
+  const [aRes]=await Promise.all([
+    apiGet({acao:'meu_acesso'}).catch(()=>null),
+    carregarSemanas()
+  ]);
+  if(aRes&&aRes.ok&&aRes.perfil==='gestor')isGestor=true;
   await Promise.all([carregarEscala(),carregarFeristas(),carregarTecnicos()]);
 }
 
