@@ -35,18 +35,47 @@ a{color:#2e7d4f;font-weight:500}
   <div id="err"></div>
 </div>
 <script>
-const API_URL='https://script.google.com/macros/s/AKfycbxmcYh6y_pp5e_VyfHXpA74cS6hU0xyIK87tFPxmy0lI2hRZ0i6ZrExfgM8yceilpn_/exec';
-async function init(){
-  try{
-    const url=new URL(API_URL); url.searchParams.set('acao','meu_acesso');
-    const r=await fetch(url.toString()); const d=await r.json();
-    if(d&&d.ok) window.location.href='painel.html';
-    else window.location.href='acesso_negado.html';
-  }catch(e){
-    document.getElementById('err').innerHTML='<div class="err">Erro ao conectar.<br><small>'+e.message+'</small><br><br><a href="painel.html">Acessar painel diretamente &rarr;</a></div>';
+// A URL da sua API (Web App do Google)
+const API_URL = 'https://script.google.com/macros/s/AKfycbxmcYh6y_pp5e_VyfHXpA74cS6hU0xyIK87tFPxmy0lI2hRZ0i6ZrExfgM8yceilpn_/exec';
+
+async function init() {
+  try {
+    // Montamos a URL com o parâmetro de ação
+    const url = API_URL + '?acao=meu_acesso';
+
+    // O SEGREDO: Adicionamos redirect: 'follow' e mode: 'cors'
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      redirect: 'follow'
+    });
+
+    // Se a resposta não for OK, dispara erro para o catch
+    if (!response.ok) throw new Error('Resposta da rede não foi satisfatória');
+
+    const d = await response.json();
+
+    if (d && d.ok) {
+      // Se o acesso for confirmado, vai para o painel
+      window.location.href = 'painel.html';
+    } else {
+      // Se não tiver acesso, vai para a página de erro
+      window.location.href = 'acesso_negado.html';
+    }
+  } catch (e) {
+    console.error('Erro detalhado:', e);
+    document.getElementById('err').innerHTML = `
+      <div class="err">
+        <strong>Erro de Conexão</strong><br>
+        O navegador bloqueou a requisição ou você não está logado no Google.<br>
+        <small>${e.message}</small><br><br>
+        <a href="painel.html">Tentar acessar painel diretamente &rarr;</a>
+      </div>`;
   }
 }
+
 init();
+</script>
 </script>
 </body>
 </html>
