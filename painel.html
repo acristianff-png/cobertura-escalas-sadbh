@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cobertura de Escalas &middot; SAD BH</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap");
 *{box-sizing:border-box;margin:0;padding:0}
@@ -215,15 +216,22 @@ tbody tr:hover td{background:#fafbfc}
       <div id="equipes-grid"><div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div></div>
     </div>
     <div id="tab-feristas" class="tab-content">
-      <div class="filters">
-        <input type="text" placeholder="Buscar ferista..." oninput="renderFeristas()" id="fer-busca">
-        <select onchange="renderFeristas()" id="fer-cat">
-          <option value="todos">M&#233;dicos e enfermeiros</option>
-          <option value="medico">S&#243; m&#233;dicos</option>
-          <option value="enfermeiro">S&#243; enfermeiros</option>
-        </select>
+      <div class="filters" style="justify-content:space-between">
+        <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap">
+          <input type="text" placeholder="Buscar ferista..." oninput="ferVistaAtual==='semana'?renderFeristas():renderFeristasMensal()" id="fer-busca" style="flex:1;min-width:140px">
+          <select onchange="ferVistaAtual==='semana'?renderFeristas():renderFeristasMensal()" id="fer-cat">
+            <option value="todos">M&#233;dicos e enfermeiros</option>
+            <option value="medico">S&#243; m&#233;dicos</option>
+            <option value="enfermeiro">S&#243; enfermeiros</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button id="btn-fer-semana" class="btn-sec" style="padding:6px 12px;font-size:12px;background:var(--green);color:#fff;border-color:var(--green)" onclick="alternarVistaFer('semana')">Semana</button>
+          <button id="btn-fer-mes" class="btn-sec" style="padding:6px 12px;font-size:12px" onclick="alternarVistaFer('mes')">M&#234;s</button>
+        </div>
       </div>
       <div id="feristas-list"><div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div></div>
+      <div id="feristas-mensal" style="display:none"></div>
     </div>
     <div id="tab-tecnicos" class="tab-content">
       <div id="tec-alert" class="alert-bar" style="display:none"></div>
@@ -245,11 +253,14 @@ tbody tr:hover td{background:#fafbfc}
     <div id="tab-gestor" class="tab-content">
       <div class="stats" id="stats-grid"></div>
       <div class="divider"></div>
-      <p class="section-ttl">Por categoria</p>
-      <div class="cat-cards" id="cat-cards"></div>
+      <p class="section-ttl">An&#225;lise da semana</p>
+      <div id="gestor-insights"></div>
       <div class="divider"></div>
-      <p class="section-ttl">Buracos n&#227;o cobertos</p>
+      <p class="section-ttl">Aus&#234;ncias n&#227;o cobertas</p>
       <div id="nao-cobertos"></div>
+      <div class="divider"></div>
+      <p class="section-ttl">Mapa mensal de coberturas</p>
+      <div id="mapa-mensal-wrap"></div>
     </div>
   </div>
 </div>
@@ -303,12 +314,12 @@ function formatarLabelSemana(iso) {
   return `${f(seg)} - ${f(sex)}/${sex.getFullYear()}`;
 }
 const DIAS=['Seg','Ter','Qua','Qui','Sex'];
-let dadosEscala=null,dadosFeristas=null,dadosTecnicos=null,semanaAtual=null,semanas=[];
+let dadosEscala=null,dadosFeristas=null,dadosTecnicos=null,semanaAtual=null,semanas=[],isGestor=false;
 
 async function inicializar(){
   try{
     const a=await apiGet({acao:'meu_acesso'});
-    if(a&&a.ok&&a.perfil==='gestor') document.getElementById('menu-gestor').style.display='flex';
+    if(a&&a.ok&&a.perfil==='gestor'){isGestor=true;document.getElementById('menu-gestor').style.display='flex';}
   }catch(e){}
   await carregarSemanas();
   await Promise.all([carregarEscala(),carregarFeristas(),carregarTecnicos()]);
@@ -361,7 +372,7 @@ function renderEquipes(){
   });
   const semCob=dadosEscala.equipes.filter(e=>e.turnos.some(t=>t.dias.some(d=>d.tipo==='sem')));
   const al=document.getElementById('eq-alert');
-  if(semCob.length){al.style.display='flex';al.innerHTML='&#9888; '+semCob.length+' equipe(s) sem cobertura &mdash; '+semCob.map(e=>'<strong>'+e.equipe+'</strong>').join(' &middot; ');}
+  if(isGestor&&semCob.length){al.style.display='flex';al.innerHTML='&#9888; '+semCob.length+' equipe(s) com aus&#234;ncia n&#227;o coberta &mdash; '+semCob.map(e=>'<strong>'+e.equipe+'</strong>').join(' &middot; ');}
   else al.style.display='none';
   if(!lista.length){grid.innerHTML='<div class="empty">Nenhuma equipe encontrada.</div>';return;}
   grid.innerHTML=lista.map(e=>{
@@ -414,14 +425,89 @@ async function carregarGestor(){
     if(r.ok)renderGestor(r);
     else document.getElementById('stats-grid').innerHTML='<div class="erro">'+(r.erro||'Sem permiss&#227;o')+'</div>';
   }catch(e){document.getElementById('stats-grid').innerHTML='<div class="erro">Erro ao carregar.</div>';}
+  carregarMapaMensal();
 }
 
+let chartStatus=null,chartCat=null;
+
 function renderGestor(r){
-  const {stats,categorias,naoCobertos}=r;
-  document.getElementById('stats-grid').innerHTML='<div class="stat ok"><div class="stat-lbl">Coberturas</div><div class="stat-val">'+stats.cob+'</div><div class="stat-sub">feristas alocados</div></div><div class="stat warn"><div class="stat-lbl">Sem cobertura</div><div class="stat-val">'+stats.sem+'</div><div class="stat-sub">buracos abertos</div></div><div class="stat info"><div class="stat-lbl">Extras auth.</div><div class="stat-val">'+stats.ext+'</div><div class="stat-sub">autorizados</div></div><div class="stat neutral"><div class="stat-lbl">Taxa cobertura</div><div class="stat-val">'+stats.perc+'%</div><div class="stat-sub">buracos cobertos</div></div>';
+  const{stats,categorias,naoCobertos}=r;
   const m=categorias.medico,en=categorias.enfermeiro;
-  document.getElementById('cat-cards').innerHTML='<div class="cat-card med"><div class="cat-lbl">M&#233;dicos</div><div class="cat-line">Coberturas: <strong>'+m.cob+'</strong><br>Apoios: <strong>'+m.apo+'</strong><br>Sem cobertura: <strong>'+m.sem+'</strong></div></div><div class="cat-card enf"><div class="cat-lbl">Enfermeiros</div><div class="cat-line">Coberturas: <strong>'+en.cob+'</strong><br>Apoios: <strong>'+en.apo+'</strong><br>Sem cobertura: <strong>'+en.sem+'</strong></div></div><div class="cat-card tec"><div class="cat-lbl">T&#233;cnicos</div><div class="cat-line">Ver aba T&#233;cnicos</div></div>';
-  document.getElementById('nao-cobertos').innerHTML=naoCobertos.length?naoCobertos.map(x=>'<div class="nao-cob-item"><div style="flex:1"><div class="nao-cob-eq">'+x.equipe+'</div><div class="nao-cob-det">'+x.turno+' &middot; '+x.cat+' &middot; '+x.dKey+'</div></div><button class="nao-cob-btn" onclick="autorizarExtra(\''+x.equipe+'\',\''+x.turno+'\',\''+x.dKey+'\',\''+x.cat+'\')">Autorizar extra &rarr;</button></div>').join(''):'<div class="empty" style="color:var(--green)">Todos os buracos foram cobertos.</div>';
+  const perc=stats.perc;
+  const percCls=perc>=80?'ok':perc>=50?'info':'warn';
+
+  // KPI cards
+  document.getElementById('stats-grid').innerHTML=
+    '<div class="stat ok"><div class="stat-lbl">Coberturas</div><div class="stat-val">'+stats.cob+'</div><div class="stat-sub">feristas alocados</div></div>'+
+    '<div class="stat warn"><div class="stat-lbl">Sem cobertura</div><div class="stat-val">'+stats.sem+'</div><div class="stat-sub">aus&#234;ncias em aberto</div></div>'+
+    '<div class="stat info"><div class="stat-lbl">Extras auth.</div><div class="stat-val">'+stats.ext+'</div><div class="stat-sub">autorizados</div></div>'+
+    '<div class="stat '+percCls+'"><div class="stat-lbl">Taxa cobertura</div><div class="stat-val">'+perc+'%</div><div class="stat-sub">aus&#234;ncias cobertas</div></div>';
+
+  // Insights textuais
+  const insights=[];
+  if(perc>=90)insights.push({t:'success',txt:'Excelente semana — taxa de cobertura acima de 90%.'});
+  else if(perc>=70)insights.push({t:'info',txt:'Taxa de cobertura em '+perc+'% — monitorar evolu&#231;&#227;o.'});
+  else insights.push({t:'err',txt:'Aten&#231;&#227;o: taxa de cobertura baixa ('+perc+'%). '+naoCobertos.length+' aus&#234;ncia(s) sem cobertura.'});
+  if(m.sem>0)insights.push({t:'err',txt:m.sem+' aus&#234;ncia(s) de m&#233;dico sem cobertura nesta semana.'});
+  if(en.sem>0)insights.push({t:'err',txt:en.sem+' aus&#234;ncia(s) de enfermeiro sem cobertura.'});
+  if(naoCobertos.length===0&&stats.sem===0)insights.push({t:'success',txt:'Todas as aus&#234;ncias da semana est&#227;o cobertas.'});
+
+  const insightsHTML=insights.map(i=>'<div class="alert '+i.t+'" style="margin-bottom:8px">'+i.txt+'</div>').join('');
+
+  // Gestor insights: insights + charts
+  document.getElementById('gestor-insights').innerHTML=
+    insightsHTML+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px">'+
+      '<div class="card" style="margin-bottom:0">'+
+        '<div class="card-head"><div class="card-title">Distribui&#231;&#227;o de coberturas</div></div>'+
+        '<div class="card-body" style="padding:14px;display:flex;justify-content:center;align-items:center">'+
+          '<canvas id="chart-status" style="max-width:200px;max-height:200px"></canvas>'+
+        '</div>'+
+      '</div>'+
+      '<div class="card" style="margin-bottom:0">'+
+        '<div class="card-head"><div class="card-title">Aus&#234;ncias por categoria</div></div>'+
+        '<div class="card-body" style="padding:14px">'+
+          '<canvas id="chart-cat"></canvas>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+
+  // Destruir charts anteriores
+  if(chartStatus){chartStatus.destroy();chartStatus=null;}
+  if(chartCat){chartCat.destroy();chartCat=null;}
+
+  const apo=((m.apo||0)+(en.apo||0));
+  chartStatus=new Chart(document.getElementById('chart-status'),{
+    type:'doughnut',
+    data:{
+      labels:['Cobertura','Apoio','Extra','Descoberto'],
+      datasets:[{data:[stats.cob,apo,stats.ext,stats.sem],
+        backgroundColor:['#2e7d4f','#d95f1a','#6d3aad','#c0392b'],
+        borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10}}}}
+  });
+
+  chartCat=new Chart(document.getElementById('chart-cat'),{
+    type:'bar',
+    data:{
+      labels:['Coberturas','Apoios','Sem cob.'],
+      datasets:[
+        {label:'M\u00e9dicos',data:[m.cob||0,m.apo||0,m.sem||0],backgroundColor:'#1a5fa6',borderRadius:4},
+        {label:'Enfermeiros',data:[en.cob||0,en.apo||0,en.sem||0],backgroundColor:'#6d3aad',borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},
+      scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{stepSize:1}}}
+    }
+  });
+
+  // Ausências não cobertas
+  document.getElementById('nao-cobertos').innerHTML=naoCobertos.length
+    ?naoCobertos.map(x=>'<div class="nao-cob-item"><div style="flex:1"><div class="nao-cob-eq">'+x.equipe+'</div><div class="nao-cob-det">'+x.turno+' &middot; '+x.cat+' &middot; '+x.dKey+'</div></div><button class="nao-cob-btn" onclick="autorizarExtra(\''+x.equipe+'\',\''+x.turno+'\',\''+x.dKey+'\',\''+x.cat+'\')">Autorizar extra &rarr;</button></div>').join('')
+    :'<div class="empty" style="color:var(--green)">Todas as aus&#234;ncias foram cobertas.</div>';
 }
 
 async function autorizarExtra(equipe,turno,dKey,cat){
@@ -434,6 +520,11 @@ async function autorizarExtra(equipe,turno,dKey,cat){
 }
 
 function slotHTML(d){
+  if(Array.isArray(d)){
+    const valid=d.filter(x=>x&&x.tipo!=='vaga');
+    if(!valid.length)return'<div class="slot vaga"></div>';
+    return valid.map(item=>slotHTML(item)).join('');
+  }
   if(!d||d.tipo==='vaga')return '<div class="slot vaga"></div>';
   const tipos={cob:'Cobertura',apo:'Apoio',sem:'Sem cobertura',ext:'Extra autorizado'};
   const cl=d.cat==='med'?'m&#233;dico':d.cat==='enf'?'enfermeiro':'';
@@ -457,6 +548,258 @@ function showTab(tab){
   document.querySelectorAll('.nav button').forEach((b,i)=>b.classList.toggle('active',['equipes','feristas','tecnicos','gestor'][i]===tab));
   if(tab==='gestor')carregarGestor();
 }
+
+// ── Feristas: vista mensal ────────────────────────────────────────────────────
+let ferVistaAtual='semana',dadosFeristasMensal=null,ferMes=null;
+
+function alternarVistaFer(vista){
+  ferVistaAtual=vista;
+  const btnS=document.getElementById('btn-fer-semana');
+  const btnM=document.getElementById('btn-fer-mes');
+  const listW=document.getElementById('feristas-list');
+  const mensalW=document.getElementById('feristas-mensal');
+  if(vista==='semana'){
+    btnS.style.background='var(--green)';btnS.style.color='#fff';btnS.style.borderColor='var(--green)';
+    btnM.style.background='';btnM.style.color='';btnM.style.borderColor='';
+    listW.style.display='block';mensalW.style.display='none';
+  }else{
+    btnM.style.background='var(--green)';btnM.style.color='#fff';btnM.style.borderColor='var(--green)';
+    btnS.style.background='';btnS.style.color='';btnS.style.borderColor='';
+    listW.style.display='none';mensalW.style.display='block';
+    carregarFeristasMensal();
+  }
+}
+
+async function carregarFeristasMensal(){
+  const wrap=document.getElementById('feristas-mensal');
+  wrap.innerHTML=loadHTML();
+  if(!ferMes){const h=new Date();ferMes={ano:h.getFullYear(),mes:h.getMonth()+1};}
+  const{ano,mes}=ferMes;
+  const semanas=getSemanasParaMes(ano,mes);
+  const resultados=await Promise.all(semanas.map(s=>apiGet({acao:'feristas',inicio:s}).catch(()=>null)));
+  // Agrega: {nome: {isoDate: {m: status, t: status}}}
+  const agFer={};const ferOrder=[];
+  // Descobre semana atual para highlight
+  const semAtualISO=semanaParaISO(new Date());
+  semanas.forEach((semInicio,si)=>{
+    const r=resultados[si];if(!r||!r.ok||!r.feristas)return;
+    r.feristas.forEach(f=>{
+      if(!agFer[f.nome]){agFer[f.nome]={cat:f.cat,ini:f.ini||f.nome.substring(0,2).toUpperCase()};ferOrder.push(f.nome);}
+      for(let di=0;di<5;di++){
+        const dDate=new Date(semInicio+'T12:00:00');dDate.setDate(dDate.getDate()+di);
+        const iso=dDate.toISOString().split('T')[0];
+        if(dDate.getMonth()+1!==mes||dDate.getFullYear()!==ano)continue;
+        const slots=f.dias&&f.dias[di]?f.dias[di].slots:[];
+        agFer[f.nome][iso]=slots.length?slots[0].tipo:'livre';
+      }
+    });
+  });
+  dadosFeristasMensal={agFer,ferOrder,ano,mes,semAtualISO};
+  renderFeristasMensal();
+}
+
+function renderFeristasMensal(){
+  const wrap=document.getElementById('feristas-mensal');
+  if(!dadosFeristasMensal||!wrap)return;
+  const{agFer,ferOrder,ano,mes,semAtualISO}=dadosFeristasMensal;
+  const busca=document.getElementById('fer-busca').value.toLowerCase();
+  const catFil=document.getElementById('fer-cat').value;
+  const nomeMes=new Date(ano,mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const diasUteis=getDiasUteisMes(ano,mes);
+
+  // Dias da semana atual para highlight
+  const semAtualDias=new Set();
+  for(let i=0;i<5;i++){const d=new Date(semAtualISO+'T12:00:00');d.setDate(d.getDate()+i);semAtualDias.add(d.toISOString().split('T')[0]);}
+
+  const nav=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <button class="btn-sec" onclick="navegarFerMes(-1)" style="padding:4px 10px;font-size:13px">&#8249;</button>
+    <span style="font-size:13px;font-weight:600;text-transform:capitalize">${nomeMes}</span>
+    <button class="btn-sec" onclick="navegarFerMes(1)" style="padding:4px 10px;font-size:13px">&#8250;</button>
+    <button class="btn-sec" onclick="navegarFerMesHoje()" style="padding:4px 10px;font-size:11px">Hoje</button>
+  </div>`;
+
+  const legCores={cob:'var(--green)',apo:'var(--orange)',ext:'var(--purple)',livre:'#e8eaf0'};
+  const leg=`<div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="leg"><div class="leg-dot" style="background:var(--green);border:none;opacity:.85"></div>Cobertura</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--orange);border:none;opacity:.85"></div>Apoio</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--purple);border:none;opacity:.85"></div>Extra</div>
+    <div class="leg"><div class="leg-dot" style="background:#e8eaf0;border:1px solid var(--border)"></div>Livre</div>
+    <div class="leg"><div style="width:10px;height:10px;border-radius:3px;border:2px solid var(--green);flex-shrink:0"></div>Semana atual</div>
+  </div>`;
+
+  const lista=ferOrder.filter(n=>{
+    const f=agFer[n];
+    if(busca&&!n.toLowerCase().includes(busca))return false;
+    if(catFil!=='todos'&&f.cat!==catFil)return false;
+    return true;
+  });
+
+  if(!lista.length){wrap.innerHTML=nav+leg+'<div class="empty">Nenhum ferista.</div>';return;}
+
+  const hdr=diasUteis.map(iso=>{
+    const d=new Date(iso+'T12:00:00');
+    const isSemAtual=semAtualDias.has(iso);
+    return`<th style="width:26px;padding:1px 1px;text-align:center;${isSemAtual?'background:var(--green-light);':''}">
+      <div style="font-size:8px;color:var(--hint);line-height:1.3">${['D','S','T','Q','Q','S','S'][d.getDay()]}</div>
+      <div style="font-size:9px;font-weight:600;color:var(--muted)">${d.getDate()}</div>
+    </th>`;
+  }).join('');
+
+  const rows=lista.map(n=>{
+    const f=agFer[n];
+    const cells=diasUteis.map(iso=>{
+      const s=f[iso]||'livre';
+      const bg=legCores[s]||'#e8eaf0';
+      const isSemAtual=semAtualDias.has(iso);
+      const brd=isSemAtual?'2px solid var(--green)':'2px solid transparent';
+      const lbl=`${n} — ${new Date(iso+'T12:00:00').getDate()}/${new Date(iso+'T12:00:00').getMonth()+1}: ${s}`;
+      return`<td style="padding:1px 1px;${isSemAtual?'background:var(--green-light);':''}"><div title="${lbl}" style="width:22px;height:18px;border-radius:3px;background:${bg};border:${brd};opacity:${s==='livre'?'0.6':'1'}"></div></td>`;
+    }).join('');
+    const catCls=f.cat==='medico'?'med':'enf';
+    return`<tr><td style="white-space:nowrap;padding:3px 12px 3px 0;min-width:160px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="fer-av ${catCls}" style="width:24px;height:24px;font-size:9px;flex-shrink:0">${f.ini||n.substring(0,2).toUpperCase()}</div>
+        <span style="font-size:11px;font-weight:500;color:var(--text)">${n}</span>
+      </div>
+    </td>${cells}</tr>`;
+  }).join('');
+
+  wrap.innerHTML=nav+leg+`<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff">
+    <table style="border-collapse:collapse;white-space:nowrap">
+      <thead><tr><th style="min-width:160px;text-align:left"></th>${hdr}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function navegarFerMes(dir){
+  if(!ferMes){const h=new Date();ferMes={ano:h.getFullYear(),mes:h.getMonth()+1};}
+  let{ano,mes}=ferMes;mes+=dir;
+  if(mes>12){mes=1;ano++;}if(mes<1){mes=12;ano--;}
+  ferMes={ano,mes};dadosFeristasMensal=null;carregarFeristasMensal();
+}
+function navegarFerMesHoje(){ferMes=null;dadosFeristasMensal=null;carregarFeristasMensal();}
+
+// ── Mapa mensal ──────────────────────────────────────────────────────────────
+let mapaData=null,mapaMes=null;
+
+function getMesAtual(){const h=new Date();return{ano:h.getFullYear(),mes:h.getMonth()+1};}
+
+function getDiasUteisMes(ano,mes){
+  const dias=[];const d=new Date(ano,mes-1,1);
+  while(d.getMonth()===mes-1){const dow=d.getDay();if(dow>=1&&dow<=5)dias.push(d.toISOString().split('T')[0]);d.setDate(d.getDate()+1);}
+  return dias;
+}
+
+function getSemanasParaMes(ano,mes){
+  const set=new Set();const d=new Date(ano,mes-1,1);const fim=new Date(ano,mes,0);
+  while(d<=fim){
+    const dow=d.getDay();const seg=new Date(d);seg.setDate(d.getDate()-(dow===0?6:dow-1));
+    set.add(seg.toISOString().split('T')[0]);d.setDate(d.getDate()+1);
+  }
+  return Array.from(set).sort();
+}
+
+function worstMapaStatus(atual,tipo){
+  if(!tipo||tipo==='vaga')return atual||'v';
+  const novo=tipo==='sem'?'r':'l';
+  if(atual==='r')return'r';
+  if(novo==='r')return'r';
+  return'l';
+}
+
+function processSlotParaMapa(slot,dest){
+  if(!slot||slot.tipo==='vaga')return;
+  const k=slot.cat==='med'?'med':slot.cat==='enf'?'enf':null;
+  if(k)dest[k]=worstMapaStatus(dest[k],slot.tipo);
+  if(slot.extra)slot.extra.forEach(e=>processSlotParaMapa(e,dest));
+}
+
+async function carregarMapaMensal(){
+  const wrap=document.getElementById('mapa-mensal-wrap');if(!wrap)return;
+  wrap.innerHTML=loadHTML();
+  if(!mapaMes)mapaMes=getMesAtual();
+  const{ano,mes}=mapaMes;
+  const semanas=getSemanasParaMes(ano,mes);
+  const resultados=await Promise.all(semanas.map(s=>apiGet({acao:'escala',inicio:s}).catch(()=>null)));
+  const agregado={};const equipeOrder=[];
+  semanas.forEach((semInicio,si)=>{
+    const r=resultados[si];if(!r||!r.ok||!r.equipes)return;
+    r.equipes.forEach(eq=>{
+      if(!agregado[eq.equipe]){agregado[eq.equipe]={};equipeOrder.push(eq.equipe);}
+      for(let di=0;di<5;di++){
+        const dDate=new Date(semInicio+'T12:00:00');dDate.setDate(dDate.getDate()+di);
+        const iso=dDate.toISOString().split('T')[0];
+        if(dDate.getMonth()+1!==mes||dDate.getFullYear()!==ano)continue;
+        if(!agregado[eq.equipe][iso])agregado[eq.equipe][iso]={med:'v',enf:'v'};
+        eq.turnos.forEach(t=>{if(t.dias&&t.dias[di])processSlotParaMapa(t.dias[di],agregado[eq.equipe][iso]);});
+      }
+    });
+  });
+  mapaData={agregado,equipeOrder,ano,mes};
+  renderMapaMensal();
+}
+
+function renderMapaMensal(){
+  const wrap=document.getElementById('mapa-mensal-wrap');if(!wrap||!mapaData)return;
+  const{agregado,equipeOrder,ano,mes}=mapaData;
+  const diasUteis=getDiasUteisMes(ano,mes);
+  const nomeMes=new Date(ano,mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  const nav=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <button class="btn-sec" onclick="navegarMapa(-1)" style="padding:4px 10px;font-size:13px">&#8249;</button>
+    <span style="font-size:13px;font-weight:600;text-transform:capitalize">${nomeMes}</span>
+    <button class="btn-sec" onclick="navegarMapa(1)" style="padding:4px 10px;font-size:13px">&#8250;</button>
+    <button class="btn-sec" onclick="navegarMapaHoje()" style="padding:4px 10px;font-size:11px">Hoje</button>
+  </div>`;
+
+  const leg=`<div style="display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap">
+    <div class="leg"><div class="leg-dot" style="background:rgba(46,125,79,.3);border:1px solid var(--green-border)"></div>Sem aus&#234;ncia</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--orange);border:none;opacity:.85"></div>Coberto</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--red);border:none;opacity:.85"></div>Descoberto</div>
+  </div>`;
+
+  function renderGrid(catKey,catLabel,catColor){
+    if(!diasUteis.length||!equipeOrder.length)return'<div class="empty">Sem dados para este m&#234;s.</div>';
+    const hdr=diasUteis.map(iso=>{
+      const d=new Date(iso+'T12:00:00');
+      return`<th style="width:24px;padding:1px 1px;text-align:center"><div style="font-size:8px;color:var(--hint);line-height:1.3">${['D','S','T','Q','Q','S','S'][d.getDay()]}</div><div style="font-size:9px;font-weight:600;color:var(--muted)">${d.getDate()}</div></th>`;
+    }).join('');
+    const rows=equipeOrder.map(eq=>{
+      const diasEq=agregado[eq]||{};
+      const cells=diasUteis.map(iso=>{
+        const d=diasEq[iso];
+        const s=(d&&d[catKey])||'v';
+        const bg=s==='r'?'var(--red)':s==='l'?'var(--orange)':'rgba(46,125,79,.25)';
+        const dObj=new Date(iso+'T12:00:00');
+        const titulo=`${eq} — ${dObj.getDate()}/${dObj.getMonth()+1}: ${s==='r'?'Descoberto':s==='l'?'Coberto':'Sem ausência'}`;
+        return`<td style="padding:1px 1px"><div title="${titulo}" style="width:22px;height:16px;border-radius:3px;background:${bg};cursor:default"></div></td>`;
+      }).join('');
+      return`<tr><td style="white-space:nowrap;padding:3px 12px 3px 0;font-size:11px;font-weight:500;color:var(--text);min-width:150px">${eq}</td>${cells}</tr>`;
+    }).join('');
+    return`<div style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${catColor};margin-bottom:8px">${catLabel}</div>
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff">
+        <table style="border-collapse:collapse;white-space:nowrap">
+          <thead><tr><th style="min-width:150px;text-align:left"></th>${hdr}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  wrap.innerHTML=nav+leg
+    +renderGrid('med','M&#233;dicos','var(--blue)')
+    +renderGrid('enf','Enfermeiros','var(--purple)');
+}
+
+function navegarMapa(dir){
+  if(!mapaMes)mapaMes=getMesAtual();
+  let{ano,mes}=mapaMes;mes+=dir;
+  if(mes>12){mes=1;ano++;}if(mes<1){mes=12;ano--;}
+  mapaMes={ano,mes};carregarMapaMensal();
+}
+function navegarMapaHoje(){mapaMes=getMesAtual();carregarMapaMensal();}
 
 inicializar();
 </script>

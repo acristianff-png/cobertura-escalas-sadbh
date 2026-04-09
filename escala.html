@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escala &middot; SAD BH</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap");
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f6f9;--card:#fff;--border:#e4e8ef;--border2:#d0d7e3;
+  --text:#1b2438;--muted:#6b7a96;--hint:#a0abbe;
+  --green:#2e7d4f;--green-mid:#3da06a;--green-light:#e8f5ee;--green-border:#b6dfc8;
+  --orange:#d95f1a;--orange-light:#fdf0e8;--orange-border:#f5c49a;
+  --red:#c0392b;--red-light:#fdecea;--red-border:#f5b8b2;
+  --blue:#1a5fa6;--blue-light:#e8f0fb;--blue-border:#aac5ef;
+  --purple:#6d3aad;--purple-light:#f0eafb;--purple-border:#c9aef0;
+  --font:"Plus Jakarta Sans",sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+.app{max-width:1020px;margin:0 auto;padding:0 0 40px}
+.topbar{background:var(--green);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-icon{width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.topbar-title{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px}
+.topbar-sub{font-size:11px;color:#a8e6c0}
+.topbar-semana{display:flex;align-items:center;gap:8px}
+.topbar-semana button{width:24px;height:24px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);border-radius:5px;cursor:pointer;font-size:12px;color:#fff}
+#semana-picker{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:3px 8px;font-size:12px;color:#fff;font-family:inherit;cursor:pointer;outline:none}
+.topbar-logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:4px 10px;font-size:11px;color:#fff;cursor:pointer;font-family:inherit}
+.content{padding:20px 20px 0}
+.loading{text-align:center;padding:48px;color:var(--muted);font-size:13px}
+.loading-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.2s ease-in-out infinite}
+.loading-dot:nth-child(2){animation-delay:.2s}.loading-dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.alert{border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:14px}
+.alert.success{background:var(--green-light);border-left:3px solid var(--green);color:#1a5c35}
+.alert.err{background:var(--red-light);border-left:3px solid var(--red);color:#8b1a14}
+.alert.info{background:var(--blue-light);border-left:3px solid var(--blue);color:#0d3070}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.card-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:600}
+.card-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.card-body{padding:16px 18px}
+.field{margin-bottom:14px}.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:#fff;border:1px solid var(--border2);border-radius:7px;padding:9px 12px;font-size:13px;color:var(--text);font-family:var(--font);outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green-mid)}
+.field input::placeholder{color:var(--hint)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.btn-pri{background:var(--green);border:none;border-radius:7px;padding:9px 20px;font-size:13px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.btn-pri:hover{background:var(--green-mid)}.btn-pri:disabled{background:var(--hint);cursor:not-allowed}
+.btn-sec{background:#fff;border:1px solid var(--border2);border-radius:7px;padding:9px 16px;font-size:13px;color:var(--muted);cursor:pointer;font-family:var(--font)}
+.btn-sec:hover{background:var(--bg)}
+.btn-danger{background:#fff;border:1px solid var(--red-border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--red);cursor:pointer;font-family:var(--font);font-weight:500}
+.btn-danger:hover{background:var(--red-light)}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filters input,.filters select{background:#fff;border:1px solid var(--border2);border-radius:7px;padding:7px 11px;font-size:12px;color:var(--text);font-family:var(--font);outline:none}
+.filters input{flex:1;min-width:140px}.filters input::placeholder{color:var(--hint)}
+.filters input:focus,.filters select:focus{border-color:var(--green-mid)}
+.legend{display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.ausencias-table{width:100%;border-collapse:collapse;font-size:12px}
+.ausencias-table thead th{background:var(--bg);padding:8px 12px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+.ausencias-table tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.ausencias-table tbody tr:last-child td{border-bottom:none}
+.ausencias-table tbody tr:hover td{background:#fafbfc}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
+.badge.sem{background:var(--red-light);color:var(--red);border:1px solid var(--red-border)}
+.badge.cob{background:var(--green-light);color:var(--green);border:1px solid var(--green-border)}
+.badge.apo{background:var(--orange-light);color:var(--orange);border:1px solid var(--orange-border)}
+.badge.ext{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border)}
+.badge.medico{background:var(--blue-light);color:var(--blue);border:1px solid var(--blue-border)}
+.badge.enfermeiro{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border)}
+.empty{text-align:center;padding:32px;color:var(--hint);font-size:13px}
+.erro{background:var(--red-light);border:1px solid var(--red-border);border-radius:8px;padding:12px 16px;color:var(--red);font-size:13px;margin-bottom:16px}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#fff" stroke-width="1.8"/><path d="M3 9h18" stroke="#fff" stroke-width="1.8"/><path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M7 14h4M7 17h6" stroke="#a8e6c0" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <div><div class="topbar-title">Gest&#227;o de Escala</div><div class="topbar-sub">SAD BH &middot; M&#243;dulo Gestor</div></div>
+    </div>
+    <div class="topbar-semana">
+      <button onclick="navegarSemana(-1)">&#8249;</button>
+      <input type="week" id="semana-picker" onchange="selecionarSemana(this.value)">
+      <button onclick="navegarSemana(1)">&#8250;</button>
+    </div>
+    <button class="topbar-logout" onclick="location.href='painel.html'">&#8592; Painel</button>
+  </div>
+
+  <div class="content">
+    <div id="alert-global"></div>
+
+    <!-- Card de nova cobertura -->
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title">Registrar cobertura / extra</div><div class="card-sub">Atribua um profissional para cobrir uma aus&#234;ncia</div></div>
+      </div>
+      <div class="card-body">
+        <div class="field-row-3">
+          <div class="field">
+            <label>Equipe *</label>
+            <select id="f-equipe"><option value="">Selecione...</option></select>
+          </div>
+          <div class="field">
+            <label>Categoria *</label>
+            <select id="f-cat" onchange="atualizarFeristas()">
+              <option value="">Selecione...</option>
+              <option value="medico">M&#233;dico</option>
+              <option value="enfermeiro">Enfermeiro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Turno *</label>
+            <select id="f-turno">
+              <option value="">Selecione...</option>
+              <option value="MANHA">Manh&#227;</option>
+              <option value="TARDE">Tarde</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Tipo *</label>
+            <select id="f-tipo">
+              <option value="Cobertura">Cobertura</option>
+              <option value="Apoio">Apoio</option>
+              <option value="Plant&#227;o extra pago">Plant&#227;o extra pago</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Profissional *</label>
+            <select id="f-prof"><option value="">Selecione a categoria primeiro</option></select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Dias da semana</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="dias-checks">
+            <label class="dia-chk" id="dc0"><input type="checkbox" value="0"> <span id="dl0">Seg</span></label>
+            <label class="dia-chk" id="dc1"><input type="checkbox" value="1"> <span id="dl1">Ter</span></label>
+            <label class="dia-chk" id="dc2"><input type="checkbox" value="2"> <span id="dl2">Qua</span></label>
+            <label class="dia-chk" id="dc3"><input type="checkbox" value="3"> <span id="dl3">Qui</span></label>
+            <label class="dia-chk" id="dc4"><input type="checkbox" value="4"> <span id="dl4">Sex</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Motivo da aus&#234;ncia</label>
+          <input type="text" id="f-motivo" placeholder="Ex: Licen&#231;a m&#233;dica, f&#233;rias, etc.">
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn-pri" id="btn-salvar" onclick="salvar()"><span id="btn-txt">Registrar cobertura</span></button>
+          <button class="btn-sec" onclick="limpar()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aus&#234;ncias da semana -->
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title">Aus&#234;ncias da semana</div><div class="card-sub" id="semana-label"></div></div>
+        <div class="filters" style="margin:0">
+          <select onchange="filtrarLista()" id="fil-status" style="background:#fff;border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--text);font-family:inherit;outline:none">
+            <option value="todos">Todos os status</option>
+            <option value="sem">Sem cobertura</option>
+            <option value="cob">Cobertos</option>
+          </select>
+          <select onchange="filtrarLista()" id="fil-cat" style="background:#fff;border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--text);font-family:inherit;outline:none">
+            <option value="todos">Todas categorias</option>
+            <option value="medico">M&#233;dicos</option>
+            <option value="enfermeiro">Enfermeiros</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="ausencias-table">
+          <thead>
+            <tr>
+              <th>Equipe</th><th>Data</th><th>Turno</th><th>Categoria</th>
+              <th>Status</th><th>Cobertura</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="lista-tbody"><tr><td colspan="7" class="empty">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de cobertura r&#225;pida -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">Autorizar cobertura</div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <input type="hidden" id="modal-equipe">
+    <input type="hidden" id="modal-turno">
+    <input type="hidden" id="modal-dkey">
+    <input type="hidden" id="modal-cat">
+    <div class="field">
+      <label>Profissional</label>
+      <select id="modal-prof"><option value="">Selecione...</option></select>
+    </div>
+    <div class="field">
+      <label>Tipo</label>
+      <select id="modal-tipo">
+        <option value="Cobertura">Cobertura</option>
+        <option value="Apoio">Apoio</option>
+        <option value="Plant&#227;o extra pago">Plant&#227;o extra pago</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Motivo</label>
+      <input type="text" id="modal-motivo" placeholder="Motivo da aus&#234;ncia...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sec" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-pri" id="modal-btn" onclick="confirmarModal()"><span id="modal-btn-txt">Confirmar</span></button>
+    </div>
+  </div>
+</div>
+
+<style>
+.dia-chk{display:flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--border2);border-radius:7px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);transition:all .12s}
+.dia-chk:has(input:checked){background:var(--green-light);border-color:var(--green-border);color:var(--green);font-weight:600}
+.dia-chk input{display:none}
+</style>
+
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbxmcYh6y_pp5e_VyfHXpA74cS6hU0xyIK87tFPxmy0lI2hRZ0i6ZrExfgM8yceilpn_/exec';
+
+async function apiGet(params){
+  const url=new URL(API_URL);
+  Object.entries(params).forEach(([k,v])=>{if(v!==null&&v!==undefined)url.searchParams.set(k,String(v));});
+  const r=await fetch(url.toString());const text=await r.text();
+  try{return JSON.parse(text);}catch(e){throw new Error('Resposta inv&#225;lida: '+text.substring(0,100));}
+}
+async function apiPost(body){
+  const r=await fetch(API_URL,{method:'POST',body:JSON.stringify(body)});const text=await r.text();
+  try{return JSON.parse(text);}catch(e){throw new Error('Resposta inv&#225;lida');}
+}
+function semanaParaISO(data){
+  const d=new Date(data);const dow=d.getDay();
+  d.setDate(d.getDate()+(dow===0?-6:1-dow));d.setHours(0,0,0,0);
+  return d.toISOString().split('T')[0];
+}
+function dataParaWeekValue(iso){
+  const d=new Date(iso+'T12:00:00');const ano=d.getFullYear();
+  const jan4=new Date(ano,0,4);const dow=jan4.getDay()||7;
+  const s1=new Date(jan4);s1.setDate(jan4.getDate()-dow+1);
+  return`${ano}-W${(Math.floor((d-s1)/604800000)+1).toString().padStart(2,'0')}`;
+}
+function weekValueParaISO(v){
+  const[ano,semStr]=v.split('-W');const sem=parseInt(semStr);
+  const jan4=new Date(+ano,0,4);const dow=jan4.getDay()||7;
+  const seg=new Date(jan4);seg.setDate(jan4.getDate()-dow+1+(sem-1)*7);
+  return seg.toISOString().split('T')[0];
+}
+
+let semanaAtual=null,todasAusencias=[],feristas=[];
+
+async function init(){
+  semanaAtual=semanaParaISO(new Date());
+  document.getElementById('semana-picker').value=dataParaWeekValue(semanaAtual);
+  atualizarLabelSemana();
+  await Promise.all([carregarEquipes(),carregarFeristas()]);
+  await carregarAusencias();
+}
+
+function atualizarLabelSemana(){
+  const seg=new Date(semanaAtual+'T12:00:00');const sex=new Date(seg);sex.setDate(seg.getDate()+4);
+  const f=d=>`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
+  document.getElementById('semana-label').textContent=f(seg)+' a '+f(sex)+'/'+sex.getFullYear();
+  // Atualizar labels dos dias
+  const DIAS_LABEL=['Seg','Ter','Qua','Qui','Sex'];
+  for(let i=0;i<5;i++){
+    const d=new Date(semanaAtual+'T12:00:00');d.setDate(d.getDate()+i);
+    const lbl=DIAS_LABEL[i]+' '+d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0');
+    const el=document.getElementById('dl'+i);if(el)el.textContent=lbl;
+  }
+}
+
+async function carregarEquipes(){
+  try{const r=await apiGet({acao:'equipes_lista'});if(r.ok){const sel=document.getElementById('f-equipe');r.equipes.forEach(eq=>{const o=document.createElement('option');o.value=eq;o.textContent=eq;sel.appendChild(o);});}}catch(e){}
+}
+async function carregarFeristas(){
+  try{const r=await apiGet({acao:'listar_feristas'});if(r.ok)feristas=r.feristas||[];}catch(e){}
+}
+
+function atualizarFeristas(){
+  const cat=document.getElementById('f-cat').value;
+  const sel=document.getElementById('f-prof');
+  sel.innerHTML='<option value="">Selecione...</option>';
+  if(!cat)return;
+  const lista=feristas.filter(f=>f.cat===cat&&f.disp!=='NAO');
+  lista.forEach(f=>{const o=document.createElement('option');o.value=f.nome;o.textContent=f.nome;sel.appendChild(o);});
+}
+
+async function carregarAusencias(){
+  document.getElementById('lista-tbody').innerHTML='<tr><td colspan="7" class="empty">Carregando...</td></tr>';
+  try{
+    const r=await apiGet({acao:'listar_ausencias',inicio:semanaAtual});
+    if(r.ok){todasAusencias=r.ausencias||[];filtrarLista();}
+    else document.getElementById('lista-tbody').innerHTML='<tr><td colspan="7" class="empty">Erro: '+(r.erro||'sem permiss&#227;o')+'</td></tr>';
+  }catch(e){document.getElementById('lista-tbody').innerHTML='<tr><td colspan="7" class="empty erro" style="text-align:center">Erro ao carregar aus&#234;ncias.</td></tr>';}
+}
+
+function filtrarLista(){
+  const status=document.getElementById('fil-status').value;
+  const cat=document.getElementById('fil-cat').value;
+  let lista=todasAusencias.filter(a=>{
+    if(cat!=='todos'&&a.categoria!==cat)return false;
+    if(status==='sem'&&a.cobertura)return false;
+    if(status==='cob'&&!a.cobertura)return false;
+    return true;
+  });
+  if(!lista.length){document.getElementById('lista-tbody').innerHTML='<tr><td colspan="7" class="empty">Nenhuma aus&#234;ncia encontrada.</td></tr>';return;}
+  const statusLabel={cob:'Coberto',apo:'Apoio',ext:'Extra',sem:'Sem cobertura'};
+  document.getElementById('lista-tbody').innerHTML=lista.map(a=>{
+    const st=a.cobertura?a.tipo_cob||'cob':'sem';
+    const stLbl=statusLabel[st]||st;
+    return`<tr>
+      <td style="font-weight:600">${a.equipe||'&mdash;'}</td>
+      <td>${a.data||'&mdash;'}</td>
+      <td>${a.turno||'&mdash;'}</td>
+      <td><span class="badge ${a.categoria}">${a.categoria}</span></td>
+      <td><span class="badge ${st}">${stLbl}</span></td>
+      <td style="color:var(--muted)">${a.cobertura||'&mdash;'}</td>
+      <td>${!a.cobertura?`<button class="btn-danger" onclick='abrirModal(${JSON.stringify(a)})'>Cobrir</button>`:'&nbsp;'}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function salvar(){
+  const equipe=document.getElementById('f-equipe').value;
+  const cat=document.getElementById('f-cat').value;
+  const turno=document.getElementById('f-turno').value;
+  const tipo=document.getElementById('f-tipo').value;
+  const prof=document.getElementById('f-prof').value;
+  const motivo=document.getElementById('f-motivo').value;
+  const diasSel=Array.from(document.querySelectorAll('#dias-checks input:checked')).map(c=>parseInt(c.value));
+  if(!equipe||!cat||!turno||!prof||!diasSel.length){mostrarAlert('err','Preencha todos os campos obrigat&#243;rios e selecione ao menos um dia.');return;}
+  const dias=diasSel.map(di=>{const d=new Date(semanaAtual+'T12:00:00');d.setDate(d.getDate()+di);return d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear();});
+  const btn=document.getElementById('btn-salvar');const btxt=document.getElementById('btn-txt');
+  btn.disabled=true;btxt.innerHTML='<span class="spinner"></span>';
+  try{
+    const r=await apiPost({acao:'autorizar_extra',equipe,turno,dias,categoria:cat,tipo,profissional:prof,motivo});
+    if(r.ok){mostrarAlert('success','Cobertura registrada com sucesso!');limpar();await carregarAusencias();}
+    else mostrarAlert('err','Erro: '+(r.erro||'falha ao salvar'));
+  }catch(e){mostrarAlert('err','Erro de conex&#227;o: '+e.message);}
+  btn.disabled=false;btxt.textContent='Registrar cobertura';
+}
+
+function limpar(){
+  ['f-equipe','f-cat','f-turno','f-prof'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-motivo').value='';
+  document.querySelectorAll('#dias-checks input').forEach(c=>c.checked=false);
+  document.getElementById('f-prof').innerHTML='<option value="">Selecione a categoria primeiro</option>';
+}
+
+function abrirModal(a){
+  document.getElementById('modal-equipe').value=a.equipe||'';
+  document.getElementById('modal-turno').value=a.turno||'';
+  document.getElementById('modal-dkey').value=a.data||'';
+  document.getElementById('modal-cat').value=a.categoria||'';
+  document.getElementById('modal-sub').textContent=(a.equipe||'')+' \u2014 '+(a.turno||'')+' \u2014 '+(a.data||'')+' \u2014 '+(a.categoria||'');
+  const sel=document.getElementById('modal-prof');
+  sel.innerHTML='<option value="">Selecione...</option>';
+  const cat=a.categoria||'';
+  feristas.filter(f=>f.cat===cat&&f.disp!=='NAO').forEach(f=>{const o=document.createElement('option');o.value=f.nome;o.textContent=f.nome;sel.appendChild(o);});
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function fecharModal(){document.getElementById('modal-overlay').classList.remove('open');}
+
+async function confirmarModal(){
+  const equipe=document.getElementById('modal-equipe').value;
+  const turno=document.getElementById('modal-turno').value;
+  const dkey=document.getElementById('modal-dkey').value;
+  const cat=document.getElementById('modal-cat').value;
+  const prof=document.getElementById('modal-prof').value;
+  const tipo=document.getElementById('modal-tipo').value;
+  const motivo=document.getElementById('modal-motivo').value;
+  if(!prof){alert('Selecione um profissional.');return;}
+  const btn=document.getElementById('modal-btn');const btxt=document.getElementById('modal-btn-txt');
+  btn.disabled=true;btxt.innerHTML='<span class="spinner"></span>';
+  try{
+    // Converte data para formato esperado pela API
+    const p=dkey.split('/');const diaFmt=p.length===3?dkey:dkey;
+    const r=await apiPost({acao:'autorizar_extra',equipe,turno,dias:[diaFmt],categoria:cat,tipo,profissional:prof,motivo});
+    if(r.ok){mostrarAlert('success','Cobertura registrada!');fecharModal();await carregarAusencias();}
+    else{mostrarAlert('err','Erro: '+(r.erro||'falha'));btn.disabled=false;btxt.textContent='Confirmar';}
+  }catch(e){mostrarAlert('err','Erro: '+e.message);btn.disabled=false;btxt.textContent='Confirmar';}
+}
+
+function navegarSemana(dir){
+  const b=new Date(semanaAtual+'T12:00:00');b.setDate(b.getDate()+dir*7);
+  semanaAtual=semanaParaISO(b);
+  document.getElementById('semana-picker').value=dataParaWeekValue(semanaAtual);
+  atualizarLabelSemana();carregarAusencias();
+}
+function selecionarSemana(v){if(!v)return;semanaAtual=weekValueParaISO(v);atualizarLabelSemana();carregarAusencias();}
+
+function mostrarAlert(tipo,msg){
+  const el=document.getElementById('alert-global');
+  el.innerHTML='<div class="alert '+tipo+'">'+msg+'</div>';
+  setTimeout(()=>{el.innerHTML='';},5000);
+}
+
+init();
+</script>
+</body>
+</html>
