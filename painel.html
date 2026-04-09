@@ -532,13 +532,14 @@ function slotHTML(d){
   if(Array.isArray(d)){
     const valid=d.filter(x=>x&&x.tipo!=='vaga');
     if(!valid.length)return'<div class="slot vaga"></div>';
-    return valid.map(item=>slotHTML(item)).join('');
+    if(valid.length===1)return slotHTML(valid[0]);
+    return'<div style="display:flex;flex-direction:column;gap:3px">'+valid.map(item=>slotHTML(item)).join('')+'</div>';
   }
   if(!d||d.tipo==='vaga')return '<div class="slot vaga"></div>';
   const tipos={cob:'Cobertura',apo:'Apoio',sem:'Sem cobertura',ext:'Extra autorizado'};
   const cl=d.cat==='med'?'m&#233;dico':d.cat==='enf'?'enfermeiro':'';
   const tag=cl?'<span class="pill '+d.cat+'">'+cl+'</span>':'';
-  let h='<div class="slot '+d.tipo+'"><div class="slot-tipo">'+(tipos[d.tipo]||d.tipo)+'</div><div class="slot-nome">'+(d.nome||'&mdash;')+'</div>'+tag+'</div>';
+  let h='<div class="slot '+d.tipo+'"><div class="slot-tipo">'+(tipos[d.tipo]||d.tipo)+(d.extra&&d.extra.length?'&nbsp;<span style="font-size:8px;opacity:.65">(+'+(d.extra.length)+')</span>':'')+'</div><div class="slot-nome">'+(d.nome||'&mdash;')+'</div>'+tag+'</div>';
   if(d.extra&&d.extra.length)d.extra.forEach(e=>{h+=slotHTML(e);});
   return h;
 }
@@ -673,9 +674,11 @@ function renderFeristasMensal(){
       const isSemAtual=semAtualDias.has(iso);
       const brd=isSemAtual?'2px solid var(--green)':'2px solid transparent';
       const abr=(s!=='livre'&&raw.local)?abreviarEquipe(raw.local,raw.turno):'';
+      const tAbr=(s!=='livre'&&raw.turno)?(raw.turno.toUpperCase().startsWith('M')?'M':'T'):'';
       const dLabel=new Date(iso+'T12:00:00');
-      const lbl=`${n} — ${dLabel.getDate()}/${dLabel.getMonth()+1}: ${s}${raw.local?' ('+raw.local+')':''}`;
-      return`<td style="padding:1px 1px;${isSemAtual?'background:var(--green-light);':''}"><div title="${lbl}" style="width:22px;height:18px;border-radius:3px;background:${bg};border:${brd};opacity:${s==='livre'?'0.55':'1'};display:flex;align-items:center;justify-content:center">${abr?`<span style="font-size:6.5px;font-weight:700;color:rgba(0,0,0,.65);line-height:1;letter-spacing:-.2px">${abr}</span>`:''}</div></td>`;
+      const lbl=`${n} — ${dLabel.getDate()}/${dLabel.getMonth()+1}: ${s==='livre'?'Livre':s==='cob'?'Cobertura':s==='apo'?'Apoio':'Extra'}${raw.local?' · '+raw.local:''}${raw.turno?' · '+(raw.turno==='MANHA'?'Manhã':'Tarde'):''}`;
+      const txtColor=s==='cob'?'rgba(255,255,255,.95)':s==='apo'?'rgba(255,255,255,.95)':s==='ext'?'rgba(255,255,255,.95)':'rgba(0,0,0,.5)';
+      return`<td style="padding:1px 2px;${isSemAtual?'background:var(--green-light);':''}"><div title="${lbl}" style="width:28px;height:22px;border-radius:4px;background:${bg};border:${brd};opacity:${s==='livre'?'0.45':'1'};display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden">${abr?`<span style="font-size:7px;font-weight:700;color:${txtColor};line-height:1.1;letter-spacing:-.3px;max-width:26px;overflow:hidden;text-overflow:clip;white-space:nowrap;text-align:center">${abr}</span><span style="font-size:6px;font-weight:600;color:${txtColor};opacity:.8;line-height:1">${tAbr}</span>`:''}</div></td>`;
     }).join('');
     const catCls=f.cat==='medico'?'med':'enf';
     return`<tr><td style="white-space:nowrap;padding:3px 12px 3px 0;min-width:160px">
