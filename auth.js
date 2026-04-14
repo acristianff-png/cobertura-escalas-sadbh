@@ -110,7 +110,7 @@
     _setStatus('Enviando c\u00f3digo...', false);
     _setBtnLoading('btn-enviar', true);
 
-    var url = new URL(window.API_URL);
+    var url = new URL(API_URL);
     url.searchParams.set('acao', 'solicitar_otp');
     url.searchParams.set('email', email);
 
@@ -145,7 +145,7 @@
     _setStatus('Verificando...', false);
     _setBtnLoading('btn-confirmar', true);
 
-    var url = new URL(window.API_URL);
+    var url = new URL(API_URL);
     url.searchParams.set('acao', 'verificar_otp');
     url.searchParams.set('email', email);
     url.searchParams.set('code', code);
