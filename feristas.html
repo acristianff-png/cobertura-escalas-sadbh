@@ -166,6 +166,7 @@ tbody tr:hover td{background:#fafbfc}
 .mini-dot.on{background:var(--green)}.mini-dot.off{background:var(--border2)}
 .actions-row{display:flex;gap:8px;margin-top:16px}
 </style>
+<script src="auth.js"></script>
 </head>
 <body>
 <div class="app">
@@ -236,12 +237,14 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxmcYh6y_pp5e_VyfHXpA74
 async function apiGet(params) {
   const url = new URL(API_URL);
   Object.entries(params).forEach(([k,v]) => { if (v !== null && v !== undefined) url.searchParams.set(k, String(v)); });
+  if (window.gsiCredential) url.searchParams.set('token', window.gsiCredential);
   const r = await fetch(url.toString());
   const text = await r.text();
   try { return JSON.parse(text); } catch(e) { throw new Error('Resposta invalida: ' + text.substring(0,100)); }
 }
 
 async function apiPost(body) {
+  if (window.gsiCredential) body._token = window.gsiCredential;
   const r = await fetch(API_URL, { method:'POST', body: JSON.stringify(body) });
   const text = await r.text();
   try { return JSON.parse(text); } catch(e) { throw new Error('Resposta invalida'); }
@@ -378,7 +381,7 @@ function mostrarAlert(tipo,msg){
   setTimeout(()=>document.getElementById('alert-global').innerHTML='',4000);
 }
 
-init();
+authReady(init);
 </script>
 </body>
 </html>

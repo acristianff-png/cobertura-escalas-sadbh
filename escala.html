@@ -151,6 +151,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13
 .validacao-item.err{background:var(--red-light);color:var(--red)}
 .validacao-item.ok{background:var(--green-light);color:#1a5c35}
 </style>
+<script src="auth.js"></script>
 </head>
 <body>
 <div class="app">
@@ -279,10 +280,12 @@ const API_URL='https://script.google.com/macros/s/AKfycbxmcYh6y_pp5e_VyfHXpA74cS
 async function apiGet(p){
   const url=new URL(API_URL);
   Object.entries(p).forEach(([k,v])=>{if(v!=null)url.searchParams.set(k,String(v));});
+  if(window.gsiCredential)url.searchParams.set('token',window.gsiCredential);
   const r=await fetch(url.toString());const t=await r.text();
   try{return JSON.parse(t);}catch(e){throw new Error('Resposta inválida: '+t.substring(0,80));}
 }
 async function apiPost(body){
+  if(window.gsiCredential)body._token=window.gsiCredential;
   const r=await fetch(API_URL,{method:'POST',body:JSON.stringify(body)});const t=await r.text();
   try{return JSON.parse(t);}catch(e){throw new Error('Resposta inválida');}
 }
@@ -885,7 +888,7 @@ function mostrarAlert(tipo,msg){
 }
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-init();
+authReady(init);
 </script>
 </body>
 </html>

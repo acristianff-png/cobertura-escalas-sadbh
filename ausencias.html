@@ -160,6 +160,7 @@ tbody tr:hover td{background:#fafbfc}
 .disp-cell{display:flex;align-items:center;justify-content:center}
 .total-badge{font-size:11px;color:var(--muted)}
 </style>
+<script src="auth.js"></script>
 </head>
 <body>
 <div class="app">
@@ -314,12 +315,14 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxmcYh6y_pp5e_VyfHXpA74
 async function apiGet(params) {
   const url = new URL(API_URL);
   Object.entries(params).forEach(([k,v]) => { if (v !== null && v !== undefined) url.searchParams.set(k, String(v)); });
+  if (window.gsiCredential) url.searchParams.set('token', window.gsiCredential);
   const r = await fetch(url.toString());
   const text = await r.text();
   try { return JSON.parse(text); } catch(e) { throw new Error('Resposta invalida: ' + text.substring(0,100)); }
 }
 
 async function apiPost(body) {
+  if (window.gsiCredential) body._token = window.gsiCredential;
   const r = await fetch(API_URL, { method:'POST', body: JSON.stringify(body) });
   const text = await r.text();
   try { return JSON.parse(text); } catch(e) { throw new Error('Resposta invalida'); }
@@ -520,7 +523,7 @@ function showTab(t){
   document.querySelectorAll('.nav button').forEach((b,i)=>b.classList.toggle('active',['novo','lista'][i]===t));
 }
 
-init();
+authReady(init);
 </script>
 </body>
 </html>

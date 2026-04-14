@@ -31,13 +31,18 @@ small{font-size:11px;color:#a0abbe}
   <small>Cobertura de Escalas &middot; SAD BH</small>
 </div>
 <script>
-const API_URL='https://script.google.com/macros/s/AKfycbxmcYh6y_pp5e_VyfHXpA74cS6hU0xyIK87tFPxmy0lI2hRZ0i6ZrExfgM8yceilpn_/exec';
-(async()=>{
-  try{
-    const url=new URL(API_URL); url.searchParams.set('acao','meu_acesso');
-    const r=await fetch(url.toString()); const d=await r.json();
-    document.getElementById('email-display').textContent=d.email||'e-mail n\u00e3o identificado';
-  }catch(e){document.getElementById('email-display').textContent='erro ao verificar';}
+(function(){
+  const stored = sessionStorage.getItem('sad_gsi_cred');
+  if (stored) {
+    try {
+      const p = JSON.parse(atob(stored.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+      document.getElementById('email-display').textContent = p.email || 'e-mail não identificado';
+    } catch(e) {
+      document.getElementById('email-display').textContent = 'e-mail não identificado';
+    }
+  } else {
+    document.getElementById('email-display').textContent = 'não autenticado';
+  }
 })();
 </script>
 </body>

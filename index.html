@@ -18,6 +18,7 @@ p{font-size:13px;color:#6b7a96;margin-bottom:24px}
 .err{background:#fdecea;border:1px solid #f5b8b2;border-radius:10px;padding:16px 20px;color:#c0392b;font-size:13px;margin-top:20px;max-width:360px;text-align:left}
 a{color:#2e7d4f;font-weight:500}
 </style>
+<script src="auth.js"></script>
 </head>
 <body>
 <div class="c">
@@ -40,11 +41,10 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxmcYh6y_pp5e_VyfHXpA74
 
 async function init() {
   try {
-    // Montamos a URL com o parâmetro de ação
-    const url = API_URL + '?acao=meu_acesso';
-
-    // O SEGREDO: Adicionamos redirect: 'follow' e mode: 'cors'
-    const response = await fetch(url, {
+    const url = new URL(API_URL);
+    url.searchParams.set('acao', 'meu_acesso');
+    if (window.gsiCredential) url.searchParams.set('token', window.gsiCredential);
+    const response = await fetch(url.toString(), {
       method: 'GET',
       mode: 'cors',
       redirect: 'follow'
@@ -74,8 +74,7 @@ async function init() {
   }
 }
 
-init();
-</script>
+authReady(init);
 </script>
 </body>
 </html>
