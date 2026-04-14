@@ -1,6 +1,6 @@
-// auth.js — Login por código de email (OTP) para SAD BH
-// Não requer Google Cloud Console nem OAuth Client ID.
-// Fluxo: usuário informa email → recebe código no email → digita código → acesso liberado
+// auth.js — Login por e-mail cadastrado para SAD BH
+// Sem necessidade de Google OAuth ou envio de e-mail.
+// O controle de acesso é feito via cad_acessos no Apps Script.
 (function () {
   var STORAGE_KEY = 'sad_sess';
 
@@ -40,8 +40,8 @@
     el.style.color = isError ? '#c0392b' : '#6b7a96';
   }
 
-  function _setBtnLoading(btnId, loading) {
-    var btn = document.getElementById(btnId);
+  function _setBtnLoading(id, loading) {
+    var btn = document.getElementById(id);
     if (!btn) return;
     btn.disabled = loading;
     btn.style.opacity = loading ? '0.6' : '1';
@@ -57,103 +57,41 @@
     div.innerHTML =
       '<div style="background:#fff;border-radius:16px;padding:44px 40px;text-align:center;' +
       'max-width:380px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,.35);">' +
-
         '<div style="font-size:40px;margin-bottom:10px">&#x1F3E5;</div>' +
         '<h2 style="margin:0 0 4px;font-size:20px;color:#1b2438;font-weight:600;font-family:sans-serif">' +
           'Cobertura de Escalas</h2>' +
         '<p style="color:#6b7a96;margin:0 0 24px;font-size:13px;font-family:sans-serif">SAD BH</p>' +
-
-        // ── Passo 1: email ──
-        '<div id="auth-step-email">' +
-          '<p style="color:#1b2438;font-size:14px;margin:0 0 12px;font-family:sans-serif">' +
-            'Informe seu e-mail institucional</p>' +
-          '<input id="auth-email-input" type="email" placeholder="email@pbh.gov.br" ' +
-            'onkeydown="if(event.key===\'Enter\')authEnviarCodigo()" ' +
-            'style="width:100%;padding:10px 14px;border:1.5px solid #d0d7e3;border-radius:8px;' +
-            'font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none;">' +
-          '<button id="btn-enviar" onclick="authEnviarCodigo()" ' +
-            'style="width:100%;padding:11px;background:#2e7d4f;color:#fff;border:none;' +
-            'border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">' +
-            'Enviar c\u00f3digo por e-mail</button>' +
-        '</div>' +
-
-        // ── Passo 2: OTP ──
-        '<div id="auth-step-otp" style="display:none;">' +
-          '<p id="auth-otp-msg" style="color:#6b7a96;font-size:13px;margin:0 0 16px;font-family:sans-serif"></p>' +
-          '<input id="auth-otp-input" type="text" inputmode="numeric" maxlength="6" ' +
-            'placeholder="_ _ _ _ _ _" onkeydown="if(event.key===\'Enter\')authVerificarCodigo()" ' +
-            'style="width:100%;padding:12px 14px;border:1.5px solid #d0d7e3;border-radius:8px;' +
-            'font-size:26px;text-align:center;letter-spacing:8px;margin-bottom:12px;' +
-            'box-sizing:border-box;outline:none;">' +
-          '<button id="btn-confirmar" onclick="authVerificarCodigo()" ' +
-            'style="width:100%;padding:11px;background:#2e7d4f;color:#fff;border:none;' +
-            'border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">' +
-            'Confirmar</button>' +
-          '<br>' +
-          '<button onclick="authVoltarEmail()" ' +
-            'style="margin-top:10px;background:none;border:none;color:#6b7a96;' +
-            'font-size:12px;cursor:pointer;font-family:sans-serif">' +
-            '\u2190 Usar outro e-mail</button>' +
-        '</div>' +
-
+        '<p style="color:#1b2438;font-size:14px;margin:0 0 12px;font-family:sans-serif;text-align:left">' +
+          'Informe seu e-mail institucional:</p>' +
+        '<input id="auth-email-input" type="email" placeholder="email@pbh.gov.br" ' +
+          'onkeydown="if(event.key===\'Enter\')authEntrar()" ' +
+          'style="width:100%;padding:10px 14px;border:1.5px solid #d0d7e3;border-radius:8px;' +
+          'font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none;font-family:sans-serif;">' +
+        '<button id="btn-entrar" onclick="authEntrar()" ' +
+          'style="width:100%;padding:11px;background:#2e7d4f;color:#fff;border:none;' +
+          'border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:sans-serif;">' +
+          'Entrar</button>' +
         '<p id="auth-status" style="margin:14px 0 0;font-size:13px;min-height:18px;' +
-          'font-family:sans-serif"></p>' +
+          'font-family:sans-serif;color:#6b7a96"></p>' +
       '</div>';
     document.body.insertBefore(div, document.body.firstChild);
   }
 
-  // ── Ações do formulário ───────────────────────────────────────────────────
-
-  window.authEnviarCodigo = function () {
+  // ── Ação do formulário ────────────────────────────────────────────────────
+  window.authEntrar = function () {
     var email = (document.getElementById('auth-email-input').value || '').trim();
     if (!email) { _setStatus('Informe seu e-mail.', true); return; }
-    _setStatus('Enviando c\u00f3digo...', false);
-    _setBtnLoading('btn-enviar', true);
-
-    var url = new URL(API_URL);
-    url.searchParams.set('acao', 'solicitar_otp');
-    url.searchParams.set('email', email);
-
-    fetch(url.toString())
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        _setBtnLoading('btn-enviar', false);
-        if (d.ok) {
-          document.getElementById('auth-step-email').style.display = 'none';
-          document.getElementById('auth-step-otp').style.display = 'block';
-          document.getElementById('auth-otp-msg').textContent =
-            'C\u00f3digo enviado para ' + email + '. Verifique sua caixa de entrada.';
-          _setStatus('', false);
-          setTimeout(function () {
-            var inp = document.getElementById('auth-otp-input');
-            if (inp) inp.focus();
-          }, 100);
-        } else {
-          _setStatus(d.erro || 'Erro ao enviar c\u00f3digo.', true);
-        }
-      })
-      .catch(function () {
-        _setBtnLoading('btn-enviar', false);
-        _setStatus('Erro de conex\u00e3o. Verifique sua internet.', true);
-      });
-  };
-
-  window.authVerificarCodigo = function () {
-    var email = (document.getElementById('auth-email-input').value || '').trim();
-    var code = (document.getElementById('auth-otp-input').value || '').replace(/\s/g, '').trim();
-    if (!code || code.length < 6) { _setStatus('Informe o c\u00f3digo de 6 d\u00edgitos.', true); return; }
     _setStatus('Verificando...', false);
-    _setBtnLoading('btn-confirmar', true);
+    _setBtnLoading('btn-entrar', true);
 
     var url = new URL(API_URL);
-    url.searchParams.set('acao', 'verificar_otp');
+    url.searchParams.set('acao', 'autenticar_email');
     url.searchParams.set('email', email);
-    url.searchParams.set('code', code);
 
     fetch(url.toString())
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        _setBtnLoading('btn-confirmar', false);
+        _setBtnLoading('btn-entrar', false);
         if (d.ok) {
           window.gsiCredential = d.token;
           window.gsiEmail = email;
@@ -165,20 +103,13 @@
           _hideOverlay();
           _fire();
         } else {
-          _setStatus(d.erro || 'C\u00f3digo inv\u00e1lido.', true);
+          _setStatus(d.erro || 'E-mail não autorizado.', true);
         }
       })
       .catch(function () {
-        _setBtnLoading('btn-confirmar', false);
-        _setStatus('Erro de conex\u00e3o.', true);
+        _setBtnLoading('btn-entrar', false);
+        _setStatus('Erro de conexão. Tente novamente.', true);
       });
-  };
-
-  window.authVoltarEmail = function () {
-    document.getElementById('auth-step-email').style.display = 'block';
-    document.getElementById('auth-step-otp').style.display = 'none';
-    document.getElementById('auth-otp-input').value = '';
-    _setStatus('', false);
   };
 
   // ── Inicialização ─────────────────────────────────────────────────────────
@@ -201,7 +132,12 @@
       sessionStorage.removeItem(STORAGE_KEY);
     }
 
-    // Sem sessão válida — exibir formulário de login
+    // Sem sessão válida — exibir formulário
     _showOverlay();
+    // Foco automático no campo de email
+    setTimeout(function () {
+      var inp = document.getElementById('auth-email-input');
+      if (inp) inp.focus();
+    }, 100);
   });
 })();
