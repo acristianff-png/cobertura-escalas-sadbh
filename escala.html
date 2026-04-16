@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escala &middot; SAD BH</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap");
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f6f9;--card:#fff;--border:#e4e8ef;--border2:#d0d7e3;
+  --text:#1b2438;--muted:#6b7a96;--hint:#a0abbe;
+  --green:#2e7d4f;--green-mid:#3da06a;--green-light:#e8f5ee;--green-border:#b6dfc8;
+  --orange:#d95f1a;--orange-light:#fdf0e8;--orange-border:#f5c49a;
+  --red:#c0392b;--red-light:#fdecea;--red-border:#f5b8b2;
+  --blue:#1a5fa6;--blue-light:#e8f0fb;--blue-border:#aac5ef;
+  --purple:#6d3aad;--purple-light:#f0eafb;--purple-border:#c9aef0;
+  --cyan:#0a7c8c;--cyan-light:#e6f6f8;--cyan-border:#9ad8e0;
+  --font:"Plus Jakarta Sans",sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+.app{max-width:1180px;margin:0 auto;padding:0 0 40px}
+.topbar{background:var(--green);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-icon{width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.topbar-title{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px}
+.topbar-sub{font-size:11px;color:#a8e6c0}
+.topbar-center{display:flex;align-items:center;gap:8px}
+.topbar-center button{width:24px;height:24px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);border-radius:5px;cursor:pointer;font-size:14px;color:#fff;line-height:1}
+#mes-picker{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:3px 8px;font-size:12px;color:#fff;font-family:inherit;cursor:pointer;outline:none}
+.topbar-logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:4px 10px;font-size:11px;color:#fff;cursor:pointer;font-family:inherit}
+.subbar{background:#fff;border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;height:44px;margin-bottom:20px}
+.nav button{background:none;border:none;border-bottom:2px solid transparent;padding:0 16px;height:44px;font-size:13px;font-family:var(--font);font-weight:500;cursor:pointer;color:var(--muted);transition:all .15s}
+.nav button.active{color:var(--green);border-bottom-color:var(--green)}
+.content{padding:0 20px}
+.tab-content{display:none}.tab-content.active{display:block}
+.loading{text-align:center;padding:48px;color:var(--muted);font-size:13px}
+.loading-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.2s ease-in-out infinite}
+.loading-dot:nth-child(2){animation-delay:.2s}.loading-dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.alert{border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:14px}
+.alert.success{background:var(--green-light);border-left:3px solid var(--green);color:#1a5c35}
+.alert.err{background:var(--red-light);border-left:3px solid var(--red);color:#8b1a14}
+.alert.info{background:var(--blue-light);border-left:3px solid var(--blue);color:#0d3070}
+.alert.warn{background:var(--orange-light);border-left:3px solid var(--orange);color:#7a3000}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.card-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:600}
+.card-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.card-body{padding:16px 18px}
+.field{margin-bottom:14px}.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+.field input,.field select{width:100%;background:#fff;border:1px solid var(--border2);border-radius:7px;padding:9px 12px;font-size:13px;color:var(--text);font-family:var(--font);outline:none}
+.field input:focus,.field select:focus{border-color:var(--green-mid)}
+.field input::placeholder{color:var(--hint)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-pri{background:var(--green);border:none;border-radius:7px;padding:9px 20px;font-size:13px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.btn-pri:hover{background:var(--green-mid)}.btn-pri:disabled{background:var(--hint);cursor:not-allowed}
+.btn-sec{background:#fff;border:1px solid var(--border2);border-radius:7px;padding:9px 16px;font-size:13px;color:var(--muted);cursor:pointer;font-family:var(--font)}
+.btn-sec:hover{background:var(--bg)}
+.btn-warn{background:#fff;border:1px solid var(--orange-border);border-radius:7px;padding:9px 16px;font-size:13px;color:var(--orange);cursor:pointer;font-family:var(--font);font-weight:600}
+.btn-warn:hover{background:var(--orange-light)}
+.btn-danger{background:#fff;border:1px solid var(--red-border);border-radius:6px;padding:4px 9px;font-size:11px;color:var(--red);cursor:pointer;font-family:var(--font)}
+.btn-danger:hover{background:var(--red-light)}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
+.badge.medico{background:var(--blue-light);color:var(--blue);border:1px solid var(--blue-border)}
+.badge.enfermeiro{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border)}
+.legend{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.empty{text-align:center;padding:32px;color:var(--hint);font-size:13px}
+.section-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* === MAPA MENSAL AUSÊNCIAS === */
+.mapa-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff}
+.mapa-table{border-collapse:collapse;white-space:nowrap}
+.mapa-table th{padding:2px 2px;text-align:center;font-size:8px;color:var(--hint);font-weight:600}
+.mapa-table td.eq-name{white-space:nowrap;padding:2px 12px 2px 0;min-width:150px;font-size:11px;font-weight:500}
+.mapa-cell{width:26px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:6.5px;font-weight:700;color:rgba(255,255,255,.9)}
+.mapa-cell.cob{background:var(--green)}
+.mapa-cell.sem{background:var(--red)}
+.mapa-cell.apo{background:var(--orange)}
+.mapa-cell.ext{background:var(--purple)}
+.mapa-cell.livre{background:#e8eaf0;color:var(--hint)}
+.mapa-cell.sem-atual{outline:2px solid var(--green);outline-offset:1px}
+
+/* === PARAMS TABLE === */
+.params-table{width:100%;border-collapse:collapse;font-size:12px}
+.params-table th{background:var(--bg);padding:8px 12px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+.params-table td{padding:7px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.params-table tr:last-child td{border-bottom:none}
+.params-table input[type=number]{width:80px;border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;text-align:center;font-family:var(--font);outline:none}
+.params-table input[type=number]:focus{border-color:var(--green-mid)}
+
+/* === DRAG & DROP GRADE === */
+.ajustar-layout{display:grid;grid-template-columns:1fr 220px;gap:16px;align-items:start}
+.grade-wrap{overflow-x:auto}
+.grade-table{border-collapse:collapse;font-size:11px;min-width:600px}
+.grade-table .col-eq{min-width:130px;padding:4px 8px;font-weight:600;font-size:11px;background:var(--bg);border:1px solid var(--border);vertical-align:middle}
+.grade-table .col-turno{width:50px;padding:4px 6px;font-size:9px;font-weight:600;text-transform:uppercase;color:var(--muted);background:var(--bg);border:1px solid var(--border);white-space:nowrap}
+.grade-table .col-dia-h{padding:4px 4px;text-align:center;font-size:9px;font-weight:600;color:var(--hint);background:var(--bg);border:1px solid var(--border);white-space:nowrap}
+.grade-slot{min-width:100px;height:52px;padding:2px;border:1px solid var(--border);vertical-align:top;position:relative}
+.grade-slot.over{background:var(--green-light)!important;outline:2px dashed var(--green);outline-offset:-2px}
+.grade-slot.sem-abs{background:#fff9f9}
+.grade-slot.com-alocacao{background:#f4faf7}
+.slot-card{border-radius:6px;padding:4px 6px;font-size:10px;font-weight:600;line-height:1.3;cursor:grab;display:flex;justify-content:space-between;align-items:flex-start;gap:4px;height:100%;min-height:44px;border:1px solid transparent}
+.slot-card:active{cursor:grabbing}
+.slot-card.cob{background:var(--green-light);border-color:var(--green-border);color:#1a5c35}
+.slot-card.apo{background:var(--orange-light);border-color:var(--orange-border);color:#8a3a0a}
+.slot-card.ext{background:var(--purple-light);border-color:var(--purple-border);color:#4a1f85}
+.slot-card .slot-x{background:none;border:none;cursor:pointer;font-size:12px;color:inherit;opacity:.5;padding:0;line-height:1;flex-shrink:0}
+.slot-card .slot-x:hover{opacity:1}
+.slot-empty{border:2px dashed var(--border2);border-radius:6px;height:100%;min-height:44px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--hint);cursor:default}
+.slot-empty.sem-abs{border-color:var(--red-border);background:var(--red-light);color:#c0392b}
+.abs-indicator{font-size:9px;color:var(--red);font-weight:600;margin-bottom:2px}
+
+/* === FERISTAS SIDEBAR === */
+.fer-sidebar{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px}
+.fer-sidebar-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px}
+.fer-pill{background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;margin-bottom:6px;cursor:grab;display:flex;align-items:center;gap:8px;transition:all .12s;font-size:11px;font-weight:600}
+.fer-pill:active{cursor:grabbing}
+.fer-pill:hover{border-color:var(--green-border);background:var(--green-light)}
+.fer-pill.unavailable{opacity:.45;cursor:not-allowed}
+.fer-pill-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.fer-pill-av.med{background:var(--blue-light);color:var(--blue)}
+.fer-pill-av.enf{background:var(--purple-light);color:var(--purple)}
+.fer-pill-info{flex:1;min-width:0}
+.fer-pill-nome{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fer-pill-cat{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.disp-dots{display:flex;gap:2px;margin-top:3px}
+.disp-dot{width:7px;height:7px;border-radius:2px}
+.disp-dot.on{background:var(--green)}.disp-dot.off{background:var(--border2)}
+
+/* === WEEK NAV === */
+.week-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.week-nav button{padding:4px 12px;font-size:12px}
+.week-nav span{font-size:13px;font-weight:600}
+.week-nav .week-days{display:flex;gap:6px;margin-left:8px}
+.week-days .wd{font-size:11px;color:var(--muted);padding:2px 8px;background:var(--bg);border-radius:20px;border:1px solid var(--border)}
+.week-days .wd.hoje{border-color:var(--green);color:var(--green);font-weight:600}
+
+/* === ACTIONS BAR === */
+.actions-bar{display:flex;gap:8px;align-items:center;padding:14px 0;border-top:1px solid var(--border);margin-top:16px;flex-wrap:wrap}
+.actions-bar .erros-count{font-size:12px;color:var(--red);font-weight:600;margin-left:auto}
+.actions-bar .ok-count{font-size:12px;color:var(--green);font-weight:600;margin-left:auto}
+.validacao-result{margin-top:10px}
+.validacao-item{padding:6px 10px;border-radius:6px;font-size:12px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.validacao-item.err{background:var(--red-light);color:var(--red)}
+.validacao-item.ok{background:var(--green-light);color:#1a5c35}
+</style>
+<script src="auth.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#fff" stroke-width="1.8"/><path d="M3 9h18" stroke="#fff" stroke-width="1.8"/><path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M7 14h4M7 17h6" stroke="#a8e6c0" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <div><div class="topbar-title">Gest&#227;o de Escala</div><div class="topbar-sub">SAD BH &middot; M&#243;dulo Gestor</div></div>
+    </div>
+    <div class="topbar-center">
+      <button onclick="navegarMes(-1)">&#8249;</button>
+      <input type="month" id="mes-picker" onchange="selecionarMes(this.value)">
+      <button onclick="navegarMes(1)">&#8250;</button>
+    </div>
+    <button class="topbar-logout" onclick="location.href='painel.html'">&#8592; Painel</button>
+  </div>
+
+  <div class="subbar">
+    <div class="nav">
+      <button class="active" id="btn-tab-ausencias" onclick="showTab('ausencias')">Aus&#234;ncias</button>
+      <button id="btn-tab-gerar" onclick="showTab('gerar')">Gerar Escala</button>
+      <button id="btn-tab-ajustar" onclick="showTab('ajustar')">Ajustar Escala</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="alert-global"></div>
+
+    <!-- ===== ABA AUSÊNCIAS ===== -->
+    <div id="tab-ausencias" class="tab-content active">
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>Coberto</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--orange)"></div>Apoio</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--red)"></div>Sem cobertura</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--purple)"></div>Extra autorizado</div>
+        <div class="leg"><div class="leg-dot" style="background:#e8eaf0;border:1px solid var(--border)"></div>Sem aus&#234;ncia</div>
+        <div class="leg" style="margin-left:auto"><div style="width:10px;height:10px;border-radius:3px;outline:2px solid var(--green);outline-offset:1px;flex-shrink:0"></div>Semana atual</div>
+      </div>
+      <div id="mapa-ausencias-wrap">
+        <div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>
+      </div>
+    </div>
+
+    <!-- ===== ABA GERAR ESCALA ===== -->
+    <div id="tab-gerar" class="tab-content">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Par&#226;metros de aloca&#231;&#227;o</div>
+            <div class="card-sub">Informe a carga assistencial de cada equipe para calcular os pesos de prioridade</div>
+          </div>
+          <button class="btn-sec" style="font-size:12px;padding:6px 12px" onclick="recarregarEquipesParams()">&#8635; Atualizar equipes</button>
+        </div>
+        <div class="card-body">
+          <div id="params-table-wrap">
+            <div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Gera&#231;&#227;o autom&#225;tica</div>
+            <div class="card-sub">A escala mensal &#233; gerada com base nas aus&#234;ncias, disponibilidade dos feristas e pesos assistenciais</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:16px">
+            <strong style="color:var(--text)">Regras aplicadas:</strong><br>
+            &#x2022; Feristas s&#227;o sempre alocados &mdash; como cobertura (aus&#234;ncia) ou apoio (sem aus&#234;ncia)<br>
+            &#x2022; Peso assistencial: equipes com mais pacientes e antibi&#243;ticos recebem prioridade<br>
+            &#x2022; Disponibilidade fixa semanal de cada ferista &#233; respeitada<br>
+            &#x2022; Categoria &#233; respeitada: m&#233;dico cobre m&#233;dico, enfermeiro cobre enfermeiro
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn-pri" id="btn-gerar" onclick="gerarEscala()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#fff" stroke-width="2"/><path d="M2 17l10 5 10-5" stroke="#fff" stroke-width="2"/><path d="M2 12l10 5 10-5" stroke="#fff" stroke-width="2"/></svg>
+              <span id="btn-gerar-txt">Gerar escala para <span id="btn-gerar-mes"></span></span>
+            </button>
+            <span id="gerar-status" style="font-size:12px;color:var(--muted)"></span>
+          </div>
+          <div id="gerar-result" style="margin-top:14px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ABA AJUSTAR ESCALA ===== -->
+    <div id="tab-ajustar" class="tab-content">
+      <div class="week-nav">
+        <button class="btn-sec" onclick="navegarSemanaAj(-1)">&#8249;</button>
+        <span id="week-label-aj"></span>
+        <button class="btn-sec" onclick="navegarSemanaAj(1)">&#8250;</button>
+        <button class="btn-sec" style="font-size:11px;padding:4px 10px" onclick="navegarSemanaAjHoje()">Hoje</button>
+        <span style="font-size:11px;color:var(--muted);margin-left:8px" id="aj-mes-label"></span>
+      </div>
+      <div id="ajustar-content">
+        <div class="ajustar-layout">
+          <div>
+            <div id="grade-wrap">
+              <div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>
+            </div>
+          </div>
+          <div>
+            <div class="fer-sidebar">
+              <div class="fer-sidebar-ttl">Feristas dispon&#237;veis</div>
+              <div style="font-size:10px;color:var(--hint);margin-bottom:8px">Arraste para um slot da escala</div>
+              <div id="fer-sidebar-list"><div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="actions-bar">
+          <button class="btn-sec" onclick="validarEscala(true)">&#10003; Validar</button>
+          <button class="btn-pri" id="btn-salvar" onclick="salvarEscala()"><span id="btn-salvar-txt">Salvar ajustes</span></button>
+          <button class="btn-warn" id="btn-publicar" onclick="publicarEscala()"><span id="btn-publicar-txt">Publicar escala</span></button>
+          <div id="validacao-inline" style="font-size:12px"></div>
+        </div>
+        <div id="validacao-result" class="validacao-result"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbxmcYh6y_pp5e_VyfHXpA74cS6hU0xyIK87tFPxmy0lI2hRZ0i6ZrExfgM8yceilpn_/exec';
+
+async function apiGet(p){
+  const url=new URL(API_URL);
+  Object.entries(p).forEach(([k,v])=>{if(v!=null)url.searchParams.set(k,String(v));});
+  if(window.gsiCredential)url.searchParams.set('token',window.gsiCredential);
+  const r=await fetch(url.toString());const t=await r.text();
+  try{return JSON.parse(t);}catch(e){throw new Error('Resposta inválida: '+t.substring(0,80));}
+}
+async function apiPost(body){
+  if(window.gsiCredential)body._token=window.gsiCredential;
+  const r=await fetch(API_URL,{method:'POST',body:JSON.stringify(body)});const t=await r.text();
+  try{return JSON.parse(t);}catch(e){throw new Error('Resposta inválida');}
+}
+
+// ─── Date utils ──────────────────────────────────────────────────────────────
+function semanaParaISO(data){
+  const d=new Date(data);const dow=d.getDay();
+  d.setDate(d.getDate()+(dow===0?-6:1-dow));d.setHours(0,0,0,0);
+  return d.toISOString().split('T')[0];
+}
+function getDiasUteisMes(ano,mes){
+  const dias=[];const d=new Date(ano,mes-1,1);
+  while(d.getMonth()===mes-1){const dow=d.getDay();if(dow>=1&&dow<=5)dias.push(d.toISOString().split('T')[0]);d.setDate(d.getDate()+1);}
+  return dias;
+}
+function getSemanasParaMes(ano,mes){
+  const set=new Set();const d=new Date(ano,mes-1,1);const fim=new Date(ano,mes,0);
+  while(d<=fim){
+    const dow=d.getDay();const seg=new Date(d);seg.setDate(d.getDate()-(dow===0?6:dow-1));
+    set.add(seg.toISOString().split('T')[0]);d.setDate(d.getDate()+1);
+  }
+  return Array.from(set).sort();
+}
+function formatMes(ano,mes){
+  return new Date(ano,mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+}
+function isoParaDisplay(iso){
+  const d=new Date(iso+'T12:00:00');
+  return d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0');
+}
+function diasDaSemana(semInicio){
+  const dias=[];
+  for(let i=0;i<5;i++){const d=new Date(semInicio+'T12:00:00');d.setDate(d.getDate()+i);dias.push(d.toISOString().split('T')[0]);}
+  return dias;
+}
+const DIAS_SEMANA=['Seg','Ter','Qua','Qui','Sex'];
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let mesSel={ano:new Date().getFullYear(),mes:new Date().getMonth()+1};
+let semanaAj=semanaParaISO(new Date());
+// alocacoes: { `${equipe}|${iso}|${turno}`: {ferista, tipo, cat} }
+let alocacoes={};
+// ausenciasInfo: { `${equipe}|${iso}|${turno}`: {cat, profissional, motivo} }
+let ausenciasInfo={};
+let feristasList=[]; // [{nome, cat, disp:{seg_m,seg_t,...}, ini}]
+let equipesLista=[]; // string[]
+let equipesParams={}; // {equipe: {pacientes:0, antibioticos:0}}
+let dragData=null; // {ferista, fromKey, cat}
+let semanaAtualISO=semanaParaISO(new Date());
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+async function init(){
+  atualizarMesPicker();
+  document.getElementById('btn-gerar-mes').textContent=formatMes(mesSel.ano,mesSel.mes);
+  await Promise.all([carregarEquipes(),carregarFeristas()]);
+  carregarMapaAusencias();
+}
+
+function atualizarMesPicker(){
+  document.getElementById('mes-picker').value=mesSel.ano+'-'+String(mesSel.mes).padStart(2,'0');
+}
+
+function selecionarMes(v){
+  if(!v)return;
+  const[ano,mes]=v.split('-');
+  mesSel={ano:parseInt(ano),mes:parseInt(mes)};
+  document.getElementById('btn-gerar-mes').textContent=formatMes(mesSel.ano,mesSel.mes);
+  if(document.getElementById('tab-ausencias').classList.contains('active'))carregarMapaAusencias();
+}
+
+function navegarMes(dir){
+  let{ano,mes}=mesSel;mes+=dir;
+  if(mes>12){mes=1;ano++;}if(mes<1){mes=12;ano--;}
+  mesSel={ano,mes};
+  atualizarMesPicker();
+  document.getElementById('btn-gerar-mes').textContent=formatMes(mesSel.ano,mesSel.mes);
+  if(document.getElementById('tab-ausencias').classList.contains('active'))carregarMapaAusencias();
+}
+
+function showTab(tab){
+  ['ausencias','gerar','ajustar'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('btn-tab-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='ausencias')carregarMapaAusencias();
+  if(tab==='gerar')renderEquipesParams();
+  if(tab==='ajustar'){carregarAjustar();}
+}
+
+// ─── Equipes & Feristas ───────────────────────────────────────────────────────
+async function carregarEquipes(){
+  try{const r=await apiGet({acao:'equipes_lista'});if(r.ok){equipesLista=r.equipes;}}catch(e){}
+}
+
+async function carregarFeristas(){
+  try{const r=await apiGet({acao:'listar_feristas'});if(r.ok)feristasList=r.feristas||[];}catch(e){}
+}
+
+function recarregarEquipesParams(){
+  carregarEquipes().then(renderEquipesParams);
+}
+
+// ─── ABA AUSÊNCIAS: Mapa Mensal ───────────────────────────────────────────────
+async function carregarMapaAusencias(){
+  const wrap=document.getElementById('mapa-ausencias-wrap');
+  wrap.innerHTML='<div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>';
+  const{ano,mes}=mesSel;
+  const semanas=getSemanasParaMes(ano,mes);
+  const resultados=await Promise.all(semanas.map(s=>apiGet({acao:'escala',inicio:s}).catch(()=>null)));
+
+  // Agregar por equipe/dia: melhor status (sem > livre > cob/apo)
+  const agEq={}; // {equipe: {iso: 'cob'|'apo'|'sem'|'ext'|'livre'}}
+  const eqOrder=[];
+  function worstStatus(a,b){
+    const rank={livre:0,cob:1,apo:2,ext:3,sem:4};
+    return rank[b]>rank[a]?b:a;
+  }
+  function processSlot(slot,eq,iso){
+    if(!slot||slot.tipo==='vaga')return;
+    if(!agEq[eq]){agEq[eq]={};eqOrder.push(eq);}
+    agEq[eq][iso]=worstStatus(agEq[eq][iso]||'livre',slot.tipo||'livre');
+    if(slot.extra)slot.extra.forEach(e=>processSlot(e,eq,iso));
+  }
+  semanas.forEach((sem,si)=>{
+    const r=resultados[si];if(!r||!r.ok||!r.equipes)return;
+    r.equipes.forEach(e=>{
+      e.turnos.forEach(t=>{
+        t.dias.forEach((d,di)=>{
+          const dDate=new Date(sem+'T12:00:00');dDate.setDate(dDate.getDate()+di);
+          if(dDate.getMonth()+1!==mes||dDate.getFullYear()!==ano)return;
+          const iso=dDate.toISOString().split('T')[0];
+          if(Array.isArray(d))d.forEach(s=>processSlot(s,e.equipe,iso));
+          else processSlot(d,e.equipe,iso);
+        });
+      });
+    });
+  });
+
+  const diasUteis=getDiasUteisMes(ano,mes);
+  const semAtualDias=new Set(diasDaSemana(semanaAtualISO));
+  const nomeMes=formatMes(ano,mes);
+
+  // Build header
+  const hdr=diasUteis.map(iso=>{
+    const d=new Date(iso+'T12:00:00');
+    const isSem=semAtualDias.has(iso);
+    return`<th style="padding:1px 2px;text-align:center;${isSem?'background:var(--green-light);':''}">
+      <div style="font-size:7.5px;color:var(--hint)">${['D','S','T','Q','Q','S','S'][d.getDay()]}</div>
+      <div style="font-size:9px;font-weight:600;color:var(--muted)">${d.getDate()}</div>
+    </th>`;
+  }).join('');
+
+  if(!eqOrder.length){
+    wrap.innerHTML='<div class="empty">Nenhuma ausência registrada em '+nomeMes+'.</div>';
+    return;
+  }
+
+  const bgMap={cob:'var(--green)',apo:'var(--orange)',sem:'var(--red)',ext:'var(--purple)',livre:'#e8eaf0'};
+  const lblMap={cob:'Cob',apo:'Apo',sem:'Sem',ext:'Ext',livre:''};
+
+  const rows=eqOrder.map(eq=>{
+    const cells=diasUteis.map(iso=>{
+      const s=agEq[eq]?agEq[eq][iso]||'livre':'livre';
+      const isSem=semAtualDias.has(iso);
+      const brd=isSem?'outline:2px solid var(--green);outline-offset:1px;':'';
+      return`<td style="padding:1px 2px;${isSem?'background:var(--green-light);':''}">
+        <div class="mapa-cell ${s}" style="${brd}" title="${eq} — ${isoParaDisplay(iso)}: ${s}">${s!=='livre'?lblMap[s]:''}</div>
+      </td>`;
+    }).join('');
+    return`<tr><td class="eq-name">${eq}</td>${cells}</tr>`;
+  }).join('');
+
+  wrap.innerHTML=`<div style="font-size:12px;font-weight:600;text-transform:capitalize;margin-bottom:10px">${nomeMes}</div>
+  <div class="mapa-wrap">
+    <table class="mapa-table">
+      <thead><tr><th style="min-width:150px;text-align:left"></th>${hdr}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+// ─── ABA GERAR: Parâmetros ────────────────────────────────────────────────────
+function renderEquipesParams(){
+  const wrap=document.getElementById('params-table-wrap');
+  if(!equipesLista.length){wrap.innerHTML='<div class="empty">Carregando equipes...</div>';carregarEquipes().then(renderEquipesParams);return;}
+  const rows=equipesLista.map((eq,i)=>{
+    const p=equipesParams[eq]||{pacientes:0,antibioticos:0};
+    return`<tr>
+      <td style="font-weight:500">${eq}</td>
+      <td><input type="number" min="0" max="999" id="pac_${i}" value="${p.pacientes}" onchange="salvarParam('${eq.replace(/'/g,"\\'")}',${i})" style="width:80px"></td>
+      <td><input type="number" min="0" max="99" id="atb_${i}" value="${p.antibioticos}" onchange="salvarParam('${eq.replace(/'/g,"\\'")}',${i})" style="width:80px"></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`<table class="params-table">
+    <thead><tr><th>Equipe</th><th>Pacientes em acompanhamento</th><th>N&#250;mero de antibi&#243;ticos</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function salvarParam(eq,i){
+  equipesParams[eq]={
+    pacientes:parseInt(document.getElementById('pac_'+i).value)||0,
+    antibioticos:parseInt(document.getElementById('atb_'+i).value)||0
+  };
+}
+
+// ─── ABA GERAR: Gerar Escala ──────────────────────────────────────────────────
+async function gerarEscala(){
+  const btn=document.getElementById('btn-gerar');
+  const txt=document.getElementById('btn-gerar-txt');
+  const status=document.getElementById('gerar-status');
+  const result=document.getElementById('gerar-result');
+  btn.disabled=true;txt.innerHTML='<span class="spinner"></span> Gerando...';status.textContent='';result.innerHTML='';
+
+  // Salvar todos os params antes de enviar
+  equipesLista.forEach((eq,i)=>{
+    const pac=document.getElementById('pac_'+i);
+    const atb=document.getElementById('atb_'+i);
+    if(pac&&atb)equipesParams[eq]={pacientes:parseInt(pac.value)||0,antibioticos:parseInt(atb.value)||0};
+  });
+
+  const parametros=equipesLista.map(eq=>({
+    equipe:eq,
+    pacientes:(equipesParams[eq]||{}).pacientes||0,
+    antibioticos:(equipesParams[eq]||{}).antibioticos||0
+  }));
+
+  try{
+    const r=await apiPost({acao:'gerar_escala',ano:mesSel.ano,mes:mesSel.mes,parametros});
+    if(!r.ok)throw new Error(r.erro||'Erro ao gerar');
+
+    // Processar alocações retornadas
+    alocacoes={};ausenciasInfo={};
+    const alocs=r.alocacoes||r.escala||[];
+    alocs.forEach(a=>{
+      const key=`${a.equipe}|${a.data||a.dia}|${a.turno}`;
+      alocacoes[key]={ferista:a.ferista,tipo:a.tipo||'apo',cat:a.cat||a.categoria||''};
+    });
+    // Carregar ausências no mapa também
+    if(r.ausencias){
+      r.ausencias.forEach(a=>{
+        const key=`${a.equipe}|${a.data||a.dia}|${a.turno}`;
+        ausenciasInfo[key]={cat:a.cat||a.categoria||'',profissional:a.profissional||''};
+      });
+    }
+
+    const alertas=r.alertas||r.avisos||[];
+    const totalAloc=Object.keys(alocacoes).length;
+    result.innerHTML=`<div class="alert success">
+      Escala gerada com sucesso: <strong>${totalAloc}</strong> aloca&#231;&#245;es para ${formatMes(mesSel.ano,mesSel.mes)}.
+      ${alertas.length?'<br><strong>Alertas:</strong> '+alertas.join(', '):''}
+    </div>
+    <button class="btn-pri" onclick="showTab('ajustar')" style="margin-top:8px">Ajustar escala gerada &rarr;</button>`;
+
+    // Definir semana de ajuste para o 1º dia útil do mês
+    const diasMes=getDiasUteisMes(mesSel.ano,mesSel.mes);
+    if(diasMes.length)semanaAj=semanaParaISO(new Date(diasMes[0]+'T12:00:00'));
+  }catch(e){
+    result.innerHTML='<div class="alert err">Erro ao gerar: '+e.message+'</div>';
+  }finally{
+    btn.disabled=false;txt.innerHTML='Gerar escala para <span id="btn-gerar-mes">'+formatMes(mesSel.ano,mesSel.mes)+'</span>';
+  }
+}
+
+// ─── ABA AJUSTAR ──────────────────────────────────────────────────────────────
+async function carregarAjustar(){
+  atualizarWeekLabelAj();
+  document.getElementById('aj-mes-label').textContent='Escala de '+formatMes(mesSel.ano,mesSel.mes);
+  // Se não há alocações geradas, tentar carregar da API
+  if(!Object.keys(alocacoes).length){
+    await carregarEscalaExistente();
+  }
+  renderGrade();
+  renderFeristasSidebar();
+}
+
+async function carregarEscalaExistente(){
+  // Carrega escala semanal existente para pré-popular
+  try{
+    const r=await apiGet({acao:'escala',inicio:semanaAj});
+    if(!r.ok)return;
+    // Mapear dados de escala em alocacoes e ausenciasInfo
+    const dias=diasDaSemana(semanaAj);
+    r.equipes&&r.equipes.forEach(e=>{
+      e.turnos&&e.turnos.forEach(t=>{
+        t.dias&&t.dias.forEach((d,di)=>{
+          if(!d||d.tipo==='vaga')return;
+          const iso=dias[di];const key=`${e.equipe}|${iso}|${t.turno}`;
+          if(d.tipo==='sem'){
+            ausenciasInfo[key]={cat:d.cat||'',profissional:d.nome||''};
+          }else if(d.tipo&&d.tipo!=='vaga'&&d.nome){
+            alocacoes[key]={ferista:d.nome,tipo:d.tipo,cat:d.cat||''};
+            if(d.extra)d.extra.forEach(ex=>{
+              if(ex&&ex.nome)alocacoes[`${e.equipe}|${iso}|${t.turno}_extra_${ex.nome}`]={ferista:ex.nome,tipo:ex.tipo,cat:ex.cat||''};
+            });
+          }
+        });
+      });
+    });
+  }catch(e){}
+}
+
+function atualizarWeekLabelAj(){
+  const dias=diasDaSemana(semanaAj);
+  const s=new Date(semanaAj+'T12:00:00');const e=new Date(s);e.setDate(e.getDate()+4);
+  const f=d=>d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0');
+  document.getElementById('week-label-aj').textContent=f(s)+' a '+f(e)+'/'+e.getFullYear();
+}
+
+function navegarSemanaAj(dir){
+  const d=new Date(semanaAj+'T12:00:00');d.setDate(d.getDate()+dir*7);
+  semanaAj=semanaParaISO(d);
+  atualizarWeekLabelAj();
+  carregarEscalaExistente().then(()=>{renderGrade();renderFeristasSidebar();});
+}
+
+function navegarSemanaAjHoje(){
+  semanaAj=semanaParaISO(new Date());
+  atualizarWeekLabelAj();
+  renderGrade();renderFeristasSidebar();
+}
+
+// Verifica disponibilidade do ferista para um dia/turno
+function feristaDisponivel(ferista,iso,turno){
+  const f=feristasList.find(x=>x.nome===ferista);
+  if(!f||!f.disp)return true;// se sem dados, considera disponível
+  const d=new Date(iso+'T12:00:00');
+  const diaDow=d.getDay(); // 1=seg...5=sex
+  const diaMap={1:'seg',2:'ter',3:'qua',4:'qui',5:'sex'};
+  const dNome=diaMap[diaDow];
+  if(!dNome)return false;
+  const tNome=turno.toUpperCase().startsWith('M')?'m':'t';
+  const dispKey=dNome+'_'+tNome;
+  return f.disp[dispKey]!=='NAO';
+}
+
+// Verifica se ferista já está alocado no mesmo dia/turno em outro lugar
+function feristaJaAlocadoNoDia(ferista,iso,turnoExcluindo,keyExcluindo){
+  const turnoBase=turnoExcluindo.toUpperCase().startsWith('M')?'MANHA':'TARDE';
+  return Object.entries(alocacoes).some(([k,v])=>{
+    if(k===keyExcluindo)return false;
+    const parts=k.split('|');
+    const kIso=parts[1];
+    const kTurno=(parts[2]||'').toUpperCase().startsWith('M')?'MANHA':'TARDE';
+    return v.ferista===ferista&&kIso===iso&&kTurno===turnoBase;
+  });
+}
+
+function renderGrade(){
+  const dias=diasDaSemana(semanaAj);
+  const wrap=document.getElementById('grade-wrap');
+
+  // Determinar equipes relevantes: as que têm ausência ou alocação na semana
+  const equipesSemana=new Set(equipesLista);
+  // Adicionar equipes com ausências/alocações mas não na lista
+  [...Object.keys(ausenciasInfo),...Object.keys(alocacoes)].forEach(k=>{
+    const eq=k.split('|')[0];equipesSemana.add(eq);
+  });
+  const eqs=[...equipesSemana].sort();
+
+  if(!eqs.length){wrap.innerHTML='<div class="empty">Nenhuma equipe encontrada. Gere a escala primeiro ou volte depois de cadastrar equipes.</div>';return;}
+
+  const headerDias=dias.map((iso,i)=>{
+    const hoje=iso===new Date().toISOString().split('T')[0];
+    return`<th class="col-dia-h" style="${hoje?'background:var(--green-light);color:var(--green);':''}">
+      ${DIAS_SEMANA[i]}<br>${isoParaDisplay(iso)}
+    </th>`;
+  }).join('');
+
+  const turnos=['MANHA','TARDE'];
+  const turnoLabel={MANHA:'Manhã',TARDE:'Tarde'};
+
+  let rows='';
+  eqs.forEach(eq=>{
+    turnos.forEach((turno,ti)=>{
+      const cellsH=dias.map((iso)=>{
+        const key=`${eq}|${iso}|${turno}`;
+        const aloc=alocacoes[key];
+        const abs=ausenciasInfo[key];
+        const temAbs=!!abs;
+        let cellContent='';
+        if(aloc){
+          const indispon=!feristaDisponivel(aloc.ferista,iso,turno);
+          const catCls=aloc.cat==='medico'||aloc.cat==='med'?'med':'enf';
+          cellContent=`<div class="slot-card ${aloc.tipo}" draggable="true"
+            ondragstart="dragFromSlot(event,'${key.replace(/'/g,"\\'")}','${aloc.ferista.replace(/'/g,"\\'")}','${aloc.cat}')"
+            title="${aloc.ferista} — ${turnoLabel[turno]}${indispon?' ⚠ Indisponível neste turno':''}">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:9px;opacity:.7;text-transform:uppercase;letter-spacing:.3px">${aloc.tipo==='cob'?'Cobertura':aloc.tipo==='apo'?'Apoio':'Extra'}</div>
+              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${aloc.ferista}</div>
+              ${indispon?'<div style="font-size:8px;color:#c0392b">⚠ Indisponível</div>':''}
+            </div>
+            <button class="slot-x" onclick="removerAloc('${key.replace(/'/g,"\\'")}')">&#215;</button>
+          </div>`;
+        }else{
+          cellContent=`<div class="slot-empty${temAbs?' sem-abs':''}">
+            ${temAbs?'<span>Sem<br>cobertura</span>':'<span>Livre</span>'}
+          </div>`;
+        }
+        return`<td class="grade-slot${temAbs?' sem-abs':''}${aloc?' com-alocacao':''}"
+          ondragover="event.preventDefault();event.currentTarget.classList.add('over')"
+          ondragleave="event.currentTarget.classList.remove('over')"
+          ondrop="dropNaGrade(event,'${eq.replace(/'/g,"\\'")}','${iso}','${turno}')">
+          ${temAbs&&!aloc?`<div class="abs-indicator">Aus: ${abs.profissional||abs.cat||'?'}</div>`:''}
+          ${cellContent}
+        </td>`;
+      }).join('');
+      rows+=`<tr>
+        ${ti===0?`<td class="col-eq" rowspan="2">${eq}</td>`:''}
+        <td class="col-turno">${turnoLabel[turno]}</td>
+        ${cellsH}
+      </tr>`;
+    });
+  });
+
+  wrap.innerHTML=`<div class="grade-wrap"><table class="grade-table">
+    <thead><tr>
+      <th class="col-eq" style="background:var(--bg)">Equipe</th>
+      <th class="col-turno" style="background:var(--bg)">Turno</th>
+      ${headerDias}
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function renderFeristasSidebar(){
+  const dias=diasDaSemana(semanaAj);
+  const list=document.getElementById('fer-sidebar-list');
+  if(!feristasList.length){list.innerHTML='<div class="empty" style="padding:12px;font-size:11px">Nenhum ferista cadastrado.</div>';return;}
+
+  // Verificar quais já estão alocados na semana completa (todos os dias)
+  const feristaAlocCount={};
+  Object.values(alocacoes).forEach(v=>{
+    if(v.ferista)feristaAlocCount[v.ferista]=(feristaAlocCount[v.ferista]||0)+1;
+  });
+
+  const diasKeys=['seg','ter','qua','qui','sex'];
+  list.innerHTML=feristasList.map(f=>{
+    const catCls=f.categoria==='medico'?'med':'enf';
+    const ini=f.ini||f.nome.substring(0,2).toUpperCase();
+    const alocCount=feristaAlocCount[f.nome]||0;
+    const dotsM=diasKeys.map(d=>`<div class="disp-dot ${f.disp&&f.disp[d+'_m']==='NAO'?'off':'on'}"></div>`).join('');
+    const dotsT=diasKeys.map(d=>`<div class="disp-dot ${f.disp&&f.disp[d+'_t']==='NAO'?'off':'on'}"></div>`).join('');
+    return`<div class="fer-pill" draggable="true"
+      ondragstart="dragFromSidebar(event,'${f.nome.replace(/'/g,"\\'")}','${f.categoria||''}')">
+      <div class="fer-pill-av ${catCls}">${ini}</div>
+      <div class="fer-pill-info">
+        <div class="fer-pill-nome" title="${f.nome}">${f.nome}</div>
+        <div class="fer-pill-cat">${f.categoria||''} · ${alocCount} aloc.</div>
+        <div style="display:flex;flex-direction:column;gap:2px;margin-top:3px">
+          <div class="disp-dots" title="Disponibilidade manhã">${dotsM}</div>
+          <div class="disp-dots" title="Disponibilidade tarde">${dotsT}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Drag & Drop ─────────────────────────────────────────────────────────────
+function dragFromSidebar(event,ferista,cat){
+  dragData={ferista,fromKey:null,cat};
+  event.dataTransfer.effectAllowed='copy';
+}
+
+function dragFromSlot(event,fromKey,ferista,cat){
+  event.stopPropagation();
+  dragData={ferista,fromKey,cat};
+  event.dataTransfer.effectAllowed='move';
+}
+
+function dropNaGrade(event,eq,iso,turno){
+  event.preventDefault();
+  event.currentTarget.classList.remove('over');
+  if(!dragData)return;
+  const toKey=`${eq}|${iso}|${turno}`;
+  // Evitar dropar no mesmo slot
+  if(dragData.fromKey===toKey){dragData=null;return;}
+  // Verificar disponibilidade
+  if(!feristaDisponivel(dragData.ferista,iso,turno)){
+    mostrarAlert('warn','⚠ '+dragData.ferista+' não está disponível neste turno.');
+  }
+  // Verificar dupla alocação
+  if(feristaJaAlocadoNoDia(dragData.ferista,iso,turno,dragData.fromKey)){
+    mostrarAlert('warn','⚠ '+dragData.ferista+' já está alocado em outro lugar neste dia/turno.');
+  }
+  // Mover ou copiar
+  if(dragData.fromKey)delete alocacoes[dragData.fromKey];
+  const temAbs=!!ausenciasInfo[toKey];
+  alocacoes[toKey]={
+    ferista:dragData.ferista,
+    tipo:temAbs?'cob':'apo',
+    cat:dragData.cat
+  };
+  dragData=null;
+  renderGrade();renderFeristasSidebar();
+  document.getElementById('validacao-result').innerHTML='';
+  document.getElementById('validacao-inline').innerHTML='';
+}
+
+function removerAloc(key){
+  delete alocacoes[key];
+  renderGrade();renderFeristasSidebar();
+  document.getElementById('validacao-result').innerHTML='';
+  document.getElementById('validacao-inline').innerHTML='';
+}
+
+// ─── Validação ────────────────────────────────────────────────────────────────
+function validarEscala(mostrar){
+  const erros=[];const avisos=[];
+
+  // 1. Verificar ausências sem cobertura
+  Object.entries(ausenciasInfo).forEach(([key,abs])=>{
+    const aloc=alocacoes[key];
+    if(!aloc||aloc.tipo!=='cob'){
+      const[eq,iso,turno]=key.split('|');
+      erros.push('Ausência sem cobertura: '+eq+' — '+(turno==='MANHA'?'Manhã':'Tarde')+' — '+isoParaDisplay(iso));
+    }
+  });
+
+  // 2. Verificar dupla alocação (mesmo ferista, mesmo dia, mesmo turno)
+  const feristaSlots={};
+  Object.entries(alocacoes).forEach(([key,v])=>{
+    if(!v.ferista)return;
+    const parts=key.split('|');
+    const iso=parts[1];
+    const turnoBase=(parts[2]||'').toUpperCase().startsWith('M')?'MANHA':'TARDE';
+    const fKey=v.ferista+'|'+iso+'|'+turnoBase;
+    if(feristaSlots[fKey]){
+      erros.push(v.ferista+' alocado em dois lugares em '+isoParaDisplay(iso)+' ('+turnoBase+')');
+    }
+    feristaSlots[fKey]=key;
+  });
+
+  // 3. Verificar disponibilidade dos feristas
+  Object.entries(alocacoes).forEach(([key,v])=>{
+    const[eq,iso,turno]=key.split('|');
+    if(v.ferista&&!feristaDisponivel(v.ferista,iso,turno)){
+      avisos.push(v.ferista+' está alocado fora da disponibilidade em '+isoParaDisplay(iso)+' ('+turno+')');
+    }
+  });
+
+  if(mostrar){
+    const resultEl=document.getElementById('validacao-result');
+    const inlineEl=document.getElementById('validacao-inline');
+    if(!erros.length&&!avisos.length){
+      resultEl.innerHTML='<div class="alert success">&#10003; Escala válida — todas as regras foram cumpridas.</div>';
+      inlineEl.innerHTML='<span style="color:var(--green);font-weight:600">&#10003; Válida</span>';
+    }else{
+      const errItems=erros.map(e=>`<div class="validacao-item err">&#215; ${e}</div>`).join('');
+      const aviItems=avisos.map(a=>`<div class="validacao-item" style="background:var(--orange-light);color:var(--orange)">&#9888; ${a}</div>`).join('');
+      resultEl.innerHTML=errItems+aviItems;
+      inlineEl.innerHTML=erros.length?`<span style="color:var(--red);font-weight:600">${erros.length} erro(s)</span>`:`<span style="color:var(--orange);font-weight:600">${avisos.length} aviso(s)</span>`;
+    }
+  }
+  return erros;
+}
+
+// ─── Salvar / Publicar ────────────────────────────────────────────────────────
+async function salvarEscala(){
+  const erros=validarEscala(true);
+  if(erros.length){mostrarAlert('err','Corrija os erros de validação antes de salvar.');return;}
+  const btn=document.getElementById('btn-salvar');
+  const txt=document.getElementById('btn-salvar-txt');
+  btn.disabled=true;txt.innerHTML='<span class="spinner"></span> Salvando...';
+  try{
+    const ajustes=Object.entries(alocacoes).map(([key,v])=>{
+      const[equipe,data,turno]=key.split('|');
+      return{equipe,data,turno,ferista:v.ferista,tipo:v.tipo,cat:v.cat};
+    });
+    const r=await apiPost({acao:'salvar_ajustes',ajustes,ano:mesSel.ano,mes:mesSel.mes});
+    if(r.ok)mostrarAlert('success','Ajustes salvos com sucesso.');
+    else mostrarAlert('err','Erro ao salvar: '+(r.erro||'falha'));
+  }catch(e){mostrarAlert('err','Erro: '+e.message);}
+  btn.disabled=false;txt.textContent='Salvar ajustes';
+}
+
+async function publicarEscala(){
+  const erros=validarEscala(true);
+  if(erros.length){mostrarAlert('err','Corrija os erros antes de publicar.');return;}
+  if(!confirm('Publicar a escala de '+formatMes(mesSel.ano,mesSel.mes)+'?\nOs profissionais terão acesso à escala publicada.'))return;
+  const btn=document.getElementById('btn-publicar');
+  const txt=document.getElementById('btn-publicar-txt');
+  btn.disabled=true;txt.innerHTML='<span class="spinner"></span> Publicando...';
+  try{
+    const ajustes=Object.entries(alocacoes).map(([key,v])=>{
+      const[equipe,data,turno]=key.split('|');
+      return{equipe,data,turno,ferista:v.ferista,tipo:v.tipo,cat:v.cat};
+    });
+    const r=await apiPost({acao:'publicar_escala',ajustes,ano:mesSel.ano,mes:mesSel.mes});
+    if(r.ok)mostrarAlert('success','Escala publicada com sucesso!');
+    else mostrarAlert('err','Erro ao publicar: '+(r.erro||'falha'));
+  }catch(e){mostrarAlert('err','Erro: '+e.message);}
+  btn.disabled=false;txt.textContent='Publicar escala';
+}
+
+function mostrarAlert(tipo,msg){
+  const el=document.getElementById('alert-global');
+  el.innerHTML='<div class="alert '+tipo+'">'+msg+'</div>';
+  setTimeout(()=>el.innerHTML='',5000);
+}
+
+// ─── Start ────────────────────────────────────────────────────────────────────
+authReady(init);
+</script>
+</body>
+</html>
