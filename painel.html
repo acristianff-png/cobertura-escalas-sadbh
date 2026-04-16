@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cobertura de Escalas &middot; SAD BH</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap");
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f6f9;--card:#fff;--border:#e4e8ef;--border2:#d0d7e3;
+  --text:#1b2438;--muted:#6b7a96;--hint:#a0abbe;
+  --green:#2e7d4f;--green-mid:#3da06a;--green-light:#e8f5ee;--green-border:#b6dfc8;
+  --orange:#d95f1a;--orange-light:#fdf0e8;--orange-border:#f5c49a;
+  --red:#c0392b;--red-light:#fdecea;--red-border:#f5b8b2;
+  --blue:#1a5fa6;--blue-light:#e8f0fb;--blue-border:#aac5ef;
+  --purple:#6d3aad;--purple-light:#f0eafb;--purple-border:#c9aef0;
+  --cyan:#0a7c8c;--cyan-light:#e6f6f8;--cyan-border:#9ad8e0;
+  --font:"Plus Jakarta Sans",sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+.app{max-width:1020px;margin:0 auto;padding:0 0 32px}
+.topbar{background:var(--green);padding:0 20px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:52px}
+.topbar-right{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-icon{width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.topbar-title{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px}
+.topbar-sub{font-size:11px;color:#a8e6c0}
+.topbar-semana{display:flex;align-items:center;gap:8px}
+.topbar-semana button{width:24px;height:24px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);border-radius:5px;cursor:pointer;font-size:12px;color:#fff}
+#semana-picker{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:3px 8px;font-size:12px;color:#fff;font-family:inherit;cursor:pointer;outline:none}
+.menu-gestor{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.menu-gestor button{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:5px 10px;font-size:11px;color:#fff;cursor:pointer;font-family:inherit}
+.menu-gestor button:hover{background:rgba(255,255,255,.22)}
+.topbar-logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:4px 10px;font-size:11px;color:#fff;cursor:pointer;font-family:inherit}
+.subbar{background:#fff;border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;height:44px;margin-bottom:20px}
+.nav button{background:none;border:none;border-bottom:2px solid transparent;padding:0 16px;height:44px;font-size:13px;font-family:var(--font);font-weight:500;cursor:pointer;color:var(--muted);transition:all .15s}
+.nav button.active{color:var(--green);border-bottom-color:var(--green)}
+.content{padding:0 20px}
+.tab-content{display:none}.tab-content.active{display:block}
+.loading{text-align:center;padding:48px;color:var(--muted);font-size:13px}
+.loading-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.2s ease-in-out infinite}
+.loading-dot:nth-child(2){animation-delay:.2s}.loading-dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.alert-bar{background:var(--orange-light);border:1px solid var(--orange-border);border-left:3px solid var(--orange);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--orange);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.alert.success{background:var(--green-light);border-left:3px solid var(--green);color:#1a5c35}
+.alert.err{background:var(--red-light);border-left:3px solid var(--red);color:#8b1a14}
+.alert.info{background:var(--blue-light);border-left:3px solid var(--blue);color:#0d3070}
+.alert{border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:14px}
+.legend{display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filters input,.filters select{background:#fff;border:1px solid var(--border2);border-radius:7px;padding:7px 11px;font-size:12px;color:var(--text);font-family:var(--font);outline:none}
+.filters input:focus,.filters select:focus{border-color:var(--green-mid)}
+.filters input{flex:1;min-width:140px}
+.filters input::placeholder{color:var(--hint)}
+.dias-header{display:grid;gap:5px;margin-bottom:6px}
+.dia-h{font-size:10px;font-weight:600;text-align:center;color:var(--hint);text-transform:uppercase;letter-spacing:.5px}
+.equipe-grid{display:grid;gap:5px;align-items:start}
+.eq-nome{font-size:12px;font-weight:600;color:var(--text);padding-top:5px;line-height:1.3}
+.sep{height:1px;background:var(--border);margin:8px 0 10px}
+.turno-blk{margin-bottom:4px}
+.turno-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--hint);margin-bottom:3px}
+.slot{border-radius:7px;padding:5px 8px;min-height:38px;display:flex;flex-direction:column;justify-content:center;border:1px solid transparent;font-size:11px}
+.slot.cob{background:var(--green-light);border-color:var(--green-border);color:#1a5c35}
+.slot.apo{background:var(--orange-light);border-color:var(--orange-border);color:#8a3a0a}
+.slot.sem{background:var(--red-light);border-color:var(--red-border);color:#8b1a14}
+.slot.ext{background:var(--purple-light);border-color:var(--purple-border);color:#4a1f85}
+.slot.vaga{background:#f8f9fb;border-color:var(--border);color:var(--hint)}
+.slot-tipo{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;opacity:.75}
+.slot-nome{font-weight:600;line-height:1.2;margin-top:2px}
+.pill{display:inline-block;font-size:9px;padding:1px 6px;border-radius:20px;margin-top:2px;font-weight:600}
+.pill.med{background:var(--blue-light);color:var(--blue)}
+.pill.enf{background:var(--purple-light);color:var(--purple)}
+.fer-card{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.fer-head{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.fer-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.fer-av.med{background:var(--blue-light);color:var(--blue)}
+.fer-av.enf{background:var(--purple-light);color:var(--purple)}
+.fer-nome{font-size:13px;font-weight:600}
+.fer-cat{font-size:10px;padding:2px 8px;border-radius:20px;display:inline-block;margin-top:2px;font-weight:600}
+.fer-cat.med{background:var(--blue-light);color:var(--blue)}
+.fer-cat.enf{background:var(--purple-light);color:var(--purple)}
+.fer-week{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:12px 14px}
+.fer-dia{background:var(--bg);border-radius:8px;padding:8px 10px;border:1px solid var(--border)}
+.fer-dia-lbl{font-size:10px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+.fer-slot{border-radius:6px;padding:5px 8px;margin-bottom:4px}
+.fer-slot.cob{background:var(--green-light);color:#1a5c35}
+.fer-slot.apo{background:var(--orange-light);color:#8a3a0a}
+.fer-slot.ext{background:var(--purple-light);color:#4a1f85}
+.fer-slot.livre{background:#f0f2f5;color:var(--hint)}
+.fer-slot-tipo{font-size:9px;opacity:.75;font-weight:600;text-transform:uppercase}
+.fer-slot-local{font-weight:600;font-size:11px;margin-top:1px;line-height:1.3}
+.fer-slot-turno{font-size:10px;opacity:.65;margin-top:1px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;border-top:3px solid var(--border)}
+.stat.ok{border-top-color:var(--green)}.stat.warn{border-top-color:var(--red)}
+.stat.info{border-top-color:var(--orange)}.stat.neutral{border-top-color:var(--blue)}
+.stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600}
+.stat-val{font-size:26px;font-weight:700;line-height:1}
+.stat.ok .stat-val{color:var(--green)}.stat.warn .stat-val{color:var(--red)}
+.stat.info .stat-val{color:var(--orange)}.stat.neutral .stat-val{color:var(--blue)}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.cat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.cat-card{border-radius:10px;padding:14px;border:1px solid}
+.cat-card.med{background:var(--blue-light);border-color:var(--blue-border)}
+.cat-card.enf{background:var(--purple-light);border-color:var(--purple-border)}
+.cat-card.tec{background:var(--cyan-light);border-color:var(--cyan-border)}
+.cat-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.cat-card.med .cat-lbl{color:var(--blue)}.cat-card.enf .cat-lbl{color:var(--purple)}.cat-card.tec .cat-lbl{color:var(--cyan)}
+.cat-line{font-size:12px;color:var(--text);line-height:1.9}
+.nao-cob-item{display:flex;align-items:center;gap:12px;background:var(--red-light);border:1px solid var(--red-border);border-left:3px solid var(--red);border-radius:8px;padding:10px 14px;margin-bottom:6px}
+.nao-cob-eq{font-weight:700;font-size:13px}
+.nao-cob-det{font-size:11px;color:var(--red);margin-top:2px}
+.nao-cob-btn{background:#fff;border:1px solid var(--red-border);border-radius:6px;padding:5px 12px;font-size:11px;color:var(--red);cursor:pointer;font-family:var(--font);font-weight:600;white-space:nowrap}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.section-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px}
+.empty{text-align:center;padding:32px;color:var(--hint);font-size:13px}
+.erro{background:var(--red-light);border:1px solid var(--red-border);border-radius:8px;padding:12px 16px;color:var(--red);font-size:13px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:600}
+.card-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.card-body{padding:18px}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:#fff;border:1px solid var(--border2);border-radius:7px;padding:9px 12px;font-size:13px;color:var(--text);font-family:var(--font);outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green-mid)}
+.field input::placeholder,.field textarea::placeholder{color:var(--hint)}
+.field textarea{resize:vertical;min-height:68px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.btn-pri{background:var(--green);border:none;border-radius:7px;padding:9px 20px;font-size:13px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.btn-pri:hover{background:var(--green-mid)}.btn-pri:disabled{background:var(--hint);cursor:not-allowed}
+.btn-sec{background:#fff;border:1px solid var(--border2);border-radius:7px;padding:9px 16px;font-size:13px;color:var(--muted);cursor:pointer;font-family:var(--font)}
+.btn-sec:hover{background:var(--bg)}
+.btn-danger{background:#fff;border:1px solid var(--red-border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--red);cursor:pointer;font-family:var(--font);font-weight:500}
+.btn-danger:hover{background:var(--red-light)}
+.btn-edit{background:#fff;border:1px solid var(--blue-border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--blue);cursor:pointer;font-family:var(--font);font-weight:500}
+.btn-edit:hover{background:var(--blue-light)}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
+.badge.gestor{background:var(--green-light);color:var(--green);border:1px solid var(--green-border)}
+.badge.ferista,.badge.enfermeiro{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border)}
+.badge.equipe,.badge.medico{background:var(--blue-light);color:var(--blue);border:1px solid var(--blue-border)}
+.badge.sim{background:var(--green-light);color:var(--green);border:1px solid var(--green-border)}
+.badge.nao{background:var(--red-light);color:var(--red);border:1px solid var(--red-border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--bg);padding:8px 12px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#fafbfc}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tec-ok{background:var(--cyan-light);border-color:var(--cyan-border);color:#065a68}
+.tec-sem{background:var(--red-light);border-color:var(--red-border);color:#8b1a14}
+.tec-ext{background:var(--purple-light);border-color:var(--purple-border);color:#4a1f85}
+</style>
+<script src="auth.js"></script>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="#fff" stroke-width="1.8"/><path d="M3 9h18" stroke="#fff" stroke-width="1.8"/><path d="M8 2v4M16 2v4" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M7 14h4M7 17h6" stroke="#a8e6c0" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+      <div><div class="topbar-title">Cobertura de Escalas</div><div class="topbar-sub">SAD BH</div></div>
+    </div>
+    <div class="topbar-semana">
+      <button onclick="navegarSemana(-1)">&#8249;</button>
+      <input type="week" id="semana-picker" onchange="selecionarSemana(this.value)">
+      <button onclick="navegarSemana(1)">&#8250;</button>
+    </div>
+    <div class="topbar-right">
+      <div class="menu-gestor" id="menu-gestor">
+        <button onclick="location.href='ausencias.html'">Aus&#234;ncias</button>
+        <button onclick="location.href='escala.html'">Escala</button>
+        <button onclick="location.href='feristas.html'">Feristas</button>
+        <button onclick="location.href='acessos.html'">Acessos</button>
+      </div>
+    </div>
+  </div>
+  <div class="subbar">
+    <div class="nav">
+      <button class="active" onclick="showTab('equipes')">Equipes</button>
+      <button onclick="showTab('feristas')">Feristas</button>
+      <button onclick="showTab('tecnicos')">T&#233;cnicos</button>
+      <button onclick="showTab('gestor')">Gestor</button>
+    </div>
+  </div>
+  <div class="content">
+    <div id="tab-equipes" class="tab-content active">
+      <div id="eq-alert" class="alert-bar" style="display:none"></div>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:var(--green-light);border:1px solid var(--green-border)"></div>Cobertura</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--orange-light);border:1px solid var(--orange-border)"></div>Apoio</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--red-light);border:1px solid var(--red-border)"></div>Sem cobertura</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--purple-light);border:1px solid var(--purple-border)"></div>Extra autorizado</div>
+        <div class="leg"><div class="leg-dot" style="background:#f8f9fb;border:1px solid var(--border)"></div>Sem aus&#234;ncia</div>
+      </div>
+      <div class="filters">
+        <input type="text" placeholder="Buscar equipe..." oninput="renderEquipes()" id="eq-busca">
+        <select onchange="renderEquipes()" id="eq-turno">
+          <option value="todos">Manh&#227; e tarde</option>
+          <option value="MANHA">S&#243; manh&#227;</option>
+          <option value="TARDE">S&#243; tarde</option>
+        </select>
+        <select onchange="renderEquipes()" id="eq-status">
+          <option value="todos">Todos os status</option>
+          <option value="sem">S&#243; sem cobertura</option>
+          <option value="cob">Com cobertura / apoio</option>
+        </select>
+      </div>
+      <div class="dias-header" style="grid-template-columns:168px repeat(5,1fr)">
+        <div></div>
+        <div class="dia-h" id="dh0"></div><div class="dia-h" id="dh1"></div>
+        <div class="dia-h" id="dh2"></div><div class="dia-h" id="dh3"></div><div class="dia-h" id="dh4"></div>
+      </div>
+      <div id="equipes-grid"><div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div></div>
+    </div>
+    <div id="tab-feristas" class="tab-content">
+      <div class="filters" style="justify-content:space-between">
+        <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap">
+          <input type="text" placeholder="Buscar ferista..." oninput="ferVistaAtual==='semana'?renderFeristas():renderFeristasMensal()" id="fer-busca" style="flex:1;min-width:140px">
+          <select onchange="ferVistaAtual==='semana'?renderFeristas():renderFeristasMensal()" id="fer-cat">
+            <option value="todos">M&#233;dicos e enfermeiros</option>
+            <option value="medico">S&#243; m&#233;dicos</option>
+            <option value="enfermeiro">S&#243; enfermeiros</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button id="btn-fer-semana" class="btn-sec" style="padding:6px 12px;font-size:12px;background:var(--green);color:#fff;border-color:var(--green)" onclick="alternarVistaFer('semana')">Semana</button>
+          <button id="btn-fer-mes" class="btn-sec" style="padding:6px 12px;font-size:12px" onclick="alternarVistaFer('mes')">M&#234;s</button>
+        </div>
+      </div>
+      <div id="feristas-list"><div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div></div>
+      <div id="feristas-mensal" style="display:none"></div>
+    </div>
+    <div id="tab-tecnicos" class="tab-content">
+      <div id="tec-alert" class="alert-bar" style="display:none"></div>
+      <div class="filters">
+        <input type="text" placeholder="Buscar base..." oninput="renderTecnicos()" id="tec-busca">
+        <select onchange="renderTecnicos()" id="tec-status">
+          <option value="todos">Todos</option>
+          <option value="sem">S&#243; descobertos</option>
+          <option value="ext">Com extra</option>
+        </select>
+      </div>
+      <div class="dias-header" style="grid-template-columns:168px repeat(5,1fr)">
+        <div></div>
+        <div class="dia-h" id="tdh0"></div><div class="dia-h" id="tdh1"></div>
+        <div class="dia-h" id="tdh2"></div><div class="dia-h" id="tdh3"></div><div class="dia-h" id="tdh4"></div>
+      </div>
+      <div id="tecnicos-grid"><div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div></div>
+    </div>
+    <div id="tab-gestor" class="tab-content">
+      <div class="stats" id="stats-grid"></div>
+      <div class="divider"></div>
+      <p class="section-ttl">An&#225;lise da semana</p>
+      <div id="gestor-insights"></div>
+      <div class="divider"></div>
+      <p class="section-ttl">Mapa mensal de coberturas</p>
+      <div id="mapa-mensal-wrap"></div>
+      <div class="divider"></div>
+      <p class="section-ttl">Mapa de regionais</p>
+      <div id="mapa-regional-wrap"></div>
+      <div class="divider"></div>
+      <p class="section-ttl">Aus&#234;ncias n&#227;o cobertas</p>
+      <div id="nao-cobertos"></div>
+    </div>
+  </div>
+</div>
+<script>
+// Funções compartilhadas — incluir inline em cada HTML
+
+const API_URL = 'https://script.google.com/macros/s/AKfycbxmcYh6y_pp5e_VyfHXpA74cS6hU0xyIK87tFPxmy0lI2hRZ0i6ZrExfgM8yceilpn_/exec';
+
+async function apiGet(params) {
+  const url = new URL(API_URL);
+  Object.entries(params).forEach(([k,v]) => { if (v !== null && v !== undefined) url.searchParams.set(k, String(v)); });
+  if (window.gsiCredential) url.searchParams.set('token', window.gsiCredential);
+  const r = await fetch(url.toString());
+  const text = await r.text();
+  try { return JSON.parse(text); } catch(e) { throw new Error('Resposta invalida: ' + text.substring(0,100)); }
+}
+
+async function apiPost(body) {
+  if (window.gsiCredential) body._token = window.gsiCredential;
+  const r = await fetch(API_URL, { method:'POST', body: JSON.stringify(body) });
+  const text = await r.text();
+  try { return JSON.parse(text); } catch(e) { throw new Error('Resposta invalida'); }
+}
+
+function irPara(pagina) {
+  const mapa = { painel:'painel.html', ausencias:'ausencias.html', escala:'escala.html', acessos:'acessos.html', feristas:'feristas.html', negado:'acesso_negado.html' };
+  window.location.href = mapa[pagina] || pagina;
+}
+
+function semanaParaISO(data) {
+  const d = new Date(data); const dow = d.getDay();
+  d.setDate(d.getDate() + (dow===0?-6:1-dow)); d.setHours(0,0,0,0);
+  return d.toISOString().split('T')[0];
+}
+
+function dataParaWeekValue(iso) {
+  const d = new Date(iso+'T12:00:00'); const ano = d.getFullYear();
+  const jan4 = new Date(ano,0,4); const dow = jan4.getDay()||7;
+  const s1 = new Date(jan4); s1.setDate(jan4.getDate()-dow+1);
+  return `${ano}-W${(Math.floor((d-s1)/604800000)+1).toString().padStart(2,'0')}`;
+}
+
+function weekValueParaISO(v) {
+  const [ano,semStr]=v.split('-W'); const sem=parseInt(semStr);
+  const jan4=new Date(+ano,0,4); const dow=jan4.getDay()||7;
+  const seg=new Date(jan4); seg.setDate(jan4.getDate()-dow+1+(sem-1)*7);
+  return seg.toISOString().split('T')[0];
+}
+
+function formatarLabelSemana(iso) {
+  const seg=new Date(iso+'T12:00:00'); const sex=new Date(seg); sex.setDate(seg.getDate()+4);
+  const f=d=>`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
+  return `${f(seg)} - ${f(sex)}/${sex.getFullYear()}`;
+}
+const DIAS=['Seg','Ter','Qua','Qui','Sex'];
+let dadosEscala=null,dadosFeristas=null,dadosTecnicos=null,semanaAtual=null,semanas=[],isGestor=false;
+
+async function inicializar(){
+  const [aRes]=await Promise.all([
+    apiGet({acao:'meu_acesso'}).catch(()=>null),
+    carregarSemanas()
+  ]);
+  if(aRes&&aRes.ok&&aRes.perfil==='gestor')isGestor=true;
+  await Promise.all([carregarEscala(),carregarFeristas(),carregarTecnicos()]);
+}
+
+async function carregarSemanas(){
+  try{const r=await apiGet({acao:'semanas'});if(r.ok)semanas=r.semanas;}catch(e){}
+  if(!semanaAtual)semanaAtual=semanaParaISO(new Date());
+  const p=document.getElementById('semana-picker');if(p)p.value=dataParaWeekValue(semanaAtual);
+}
+
+function selecionarSemana(v){if(!v)return;semanaAtual=weekValueParaISO(v);recarregar();}
+function navegarSemana(d){const b=new Date(semanaAtual+'T12:00:00');b.setDate(b.getDate()+d*7);semanaAtual=semanaParaISO(b);const p=document.getElementById('semana-picker');if(p)p.value=dataParaWeekValue(semanaAtual);recarregar();}
+function recarregar(){Promise.all([carregarEscala(),carregarFeristas(),carregarTecnicos()]);}
+
+async function carregarEscala(){
+  document.getElementById('equipes-grid').innerHTML=loadHTML();
+  try{
+    const r=await apiGet({acao:'escala',inicio:semanaAtual});
+    if(!r.ok)throw new Error(r.erro);
+    dadosEscala=r;
+    r.dias.forEach((d,i)=>{const e=document.getElementById('dh'+i);if(e)e.textContent=DIAS[i]+' '+d;const t=document.getElementById('tdh'+i);if(t)t.textContent=DIAS[i]+' '+d;});
+    renderEquipes();
+  }catch(e){document.getElementById('equipes-grid').innerHTML='<div class="erro">Erro: '+e.message+'</div>';}
+}
+
+async function carregarFeristas(){
+  document.getElementById('feristas-list').innerHTML=loadHTML();
+  try{const r=await apiGet({acao:'feristas',inicio:semanaAtual});if(!r.ok)throw new Error(r.erro);dadosFeristas=r;renderFeristas();}
+  catch(e){document.getElementById('feristas-list').innerHTML='<div class="erro">Erro: '+e.message+'</div>';}
+}
+
+async function carregarTecnicos(){
+  document.getElementById('tecnicos-grid').innerHTML=loadHTML();
+  try{const r=await apiGet({acao:'tecnicos',inicio:semanaAtual});if(!r.ok)throw new Error(r.erro);dadosTecnicos=r;renderTecnicos();}
+  catch(e){document.getElementById('tecnicos-grid').innerHTML='<div class="erro">Erro: '+e.message+'</div>';}
+}
+
+function renderEquipes(){
+  if(!dadosEscala)return;
+  const busca=document.getElementById('eq-busca').value.toLowerCase();
+  const turno=document.getElementById('eq-turno').value;
+  const status=document.getElementById('eq-status').value;
+  const grid=document.getElementById('equipes-grid');
+  let lista=dadosEscala.equipes.filter(e=>{
+    if(!e.equipe.toLowerCase().includes(busca))return false;
+    if(status==='sem'&&!e.turnos.some(t=>t.dias.some(d=>d.tipo==='sem')))return false;
+    if(status==='cob'&&!e.turnos.some(t=>t.dias.some(d=>['cob','apo','ext'].includes(d.tipo))))return false;
+    return true;
+  });
+  const semCob=dadosEscala.equipes.filter(e=>e.turnos.some(t=>t.dias.some(d=>d.tipo==='sem')));
+  const al=document.getElementById('eq-alert');
+  if(isGestor&&semCob.length){al.style.display='flex';al.innerHTML='&#9888; '+semCob.length+' equipe(s) com aus&#234;ncia n&#227;o coberta &mdash; '+semCob.map(e=>'<strong>'+e.equipe+'</strong>').join(' &middot; ');}
+  else al.style.display='none';
+  if(!lista.length){grid.innerHTML='<div class="empty">Nenhuma equipe encontrada.</div>';return;}
+  grid.innerHTML=lista.map(e=>{
+    const ts=turno==='todos'?e.turnos:e.turnos.filter(t=>t.turno.toUpperCase().startsWith(turno==='MANHA'?'M':'T'));
+    const cols=[0,1,2,3,4].map(i=>'<div>'+ts.map(t=>'<div class="turno-blk"><div class="turno-lbl">'+t.turno+'</div>'+slotHTML(t.dias[i])+'</div>').join('')+'</div>').join('');
+    return '<div><div class="equipe-grid" style="grid-template-columns:168px repeat(5,1fr)"><div class="eq-nome">'+e.equipe+'</div>'+cols+'</div><div class="sep"></div></div>';
+  }).join('');
+}
+
+function renderFeristas(){
+  if(!dadosFeristas)return;
+  const busca=document.getElementById('fer-busca').value.toLowerCase();
+  const cat=document.getElementById('fer-cat').value;
+  const list=document.getElementById('feristas-list');
+  let lista=dadosFeristas.feristas.filter(f=>f.nome.toLowerCase().includes(busca)&&(cat==='todos'||f.cat===cat));
+  if(!lista.length){list.innerHTML='<div class="empty">Nenhum ferista encontrado.</div>';return;}
+  list.innerHTML=lista.map(f=>{
+    const dias=f.dias.map((d,i)=>{
+      const s=d.slots.length===0?'<div class="fer-slot livre"><div class="fer-slot-tipo">livre</div><div class="fer-slot-local">Sem aloca&#231;&#227;o</div></div>':d.slots.map(s=>'<div class="fer-slot '+s.tipo+'"><div class="fer-slot-tipo">'+(s.tipo==='cob'?'Cobertura':s.tipo==='apo'?'Apoio':'Extra')+'</div><div class="fer-slot-local">'+s.local+'</div><div class="fer-slot-turno">'+s.turno+'</div></div>').join('');
+      return '<div class="fer-dia"><div class="fer-dia-lbl">'+DIAS[i]+'</div>'+s+'</div>';
+    }).join('');
+    return '<div class="fer-card"><div class="fer-head"><div class="fer-av '+(f.cat==='medico'?'med':'enf')+'">'+f.ini+'</div><div><div class="fer-nome">'+f.nome+'</div><span class="fer-cat '+(f.cat==='medico'?'med':'enf')+'">'+f.cat+'</span></div></div><div class="fer-week">'+dias+'</div></div>';
+  }).join('');
+}
+
+function renderTecnicos(){
+  if(!dadosTecnicos)return;
+  const busca=document.getElementById('tec-busca').value.toLowerCase();
+  const status=document.getElementById('tec-status').value;
+  const grid=document.getElementById('tecnicos-grid');
+  let lista=(dadosTecnicos.tecnicos||[]).filter(b=>{
+    if(!b.base.toLowerCase().includes(busca))return false;
+    if(status==='sem'&&!b.dias.some(d=>d.tipo==='tec-sem'))return false;
+    if(status==='ext'&&!b.dias.some(d=>d.tipo==='tec-ext'))return false;
+    return true;
+  });
+  const al=document.getElementById('tec-alert');
+  const semCob=(dadosTecnicos.tecnicos||[]).filter(b=>b.dias.some(d=>d.tipo==='tec-sem'));
+  if(semCob.length){al.style.display='flex';al.innerHTML='&#9888; '+semCob.length+' base(s) com t&#233;cnico insuficiente';}else al.style.display='none';
+  if(!lista.length){grid.innerHTML='<div class="empty">Nenhuma base.</div>';return;}
+  grid.innerHTML=lista.map(b=>{
+    const cols=[0,1,2,3,4].map(i=>'<div>'+tecSlotHTML(b.dias[i])+'</div>').join('');
+    return '<div><div class="equipe-grid" style="grid-template-columns:168px repeat(5,1fr)"><div class="eq-nome">'+b.base+'</div>'+cols+'</div><div class="sep"></div></div>';
+  }).join('');
+}
+
+async function carregarGestor(){
+  try{
+    const r=await apiGet({acao:'gestor',inicio:semanaAtual});
+    if(r.ok)renderGestor(r);
+    else document.getElementById('stats-grid').innerHTML='<div class="erro">'+(r.erro||'Sem permiss&#227;o')+'</div>';
+  }catch(e){document.getElementById('stats-grid').innerHTML='<div class="erro">Erro ao carregar.</div>';}
+  carregarMapaMensal();
+}
+
+let chartStatus=null,chartCat=null;
+
+function renderGestor(r){
+  const{stats,categorias,naoCobertos}=r;
+  const m=categorias.medico,en=categorias.enfermeiro;
+  const perc=stats.perc;
+  const percCls=perc>=80?'ok':perc>=50?'info':'warn';
+
+  // KPI cards
+  document.getElementById('stats-grid').innerHTML=
+    '<div class="stat ok"><div class="stat-lbl">Coberturas</div><div class="stat-val">'+stats.cob+'</div><div class="stat-sub">feristas alocados</div></div>'+
+    '<div class="stat warn"><div class="stat-lbl">Sem cobertura</div><div class="stat-val">'+stats.sem+'</div><div class="stat-sub">aus&#234;ncias em aberto</div></div>'+
+    '<div class="stat info"><div class="stat-lbl">Extras auth.</div><div class="stat-val">'+stats.ext+'</div><div class="stat-sub">autorizados</div></div>'+
+    '<div class="stat '+percCls+'"><div class="stat-lbl">Taxa cobertura</div><div class="stat-val">'+perc+'%</div><div class="stat-sub">aus&#234;ncias cobertas</div></div>';
+
+  // Insights textuais
+  const insights=[];
+  if(perc>=90)insights.push({t:'success',txt:'Excelente semana — taxa de cobertura acima de 90%.'});
+  else if(perc>=70)insights.push({t:'info',txt:'Taxa de cobertura em '+perc+'% — monitorar evolu&#231;&#227;o.'});
+  else insights.push({t:'err',txt:'Aten&#231;&#227;o: taxa de cobertura baixa ('+perc+'%). '+naoCobertos.length+' aus&#234;ncia(s) sem cobertura.'});
+  if(m.sem>0)insights.push({t:'err',txt:m.sem+' aus&#234;ncia(s) de m&#233;dico sem cobertura nesta semana.'});
+  if(en.sem>0)insights.push({t:'err',txt:en.sem+' aus&#234;ncia(s) de enfermeiro sem cobertura.'});
+  if(naoCobertos.length===0&&stats.sem===0)insights.push({t:'success',txt:'Todas as aus&#234;ncias da semana est&#227;o cobertas.'});
+
+  const insightsHTML=insights.map(i=>'<div class="alert '+i.t+'" style="margin-bottom:8px">'+i.txt+'</div>').join('');
+
+  // Gestor insights: insights + charts
+  document.getElementById('gestor-insights').innerHTML=
+    insightsHTML+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px">'+
+      '<div class="card" style="margin-bottom:0">'+
+        '<div class="card-head"><div class="card-title">Distribui&#231;&#227;o de coberturas</div></div>'+
+        '<div class="card-body" style="padding:14px">'+
+          '<div style="position:relative;width:180px;height:180px;margin:auto"><canvas id="chart-status"></canvas></div>'+
+          '<div id="chart-status-leg" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:10px"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="card" style="margin-bottom:0">'+
+        '<div class="card-head"><div class="card-title">Aus&#234;ncias por categoria</div></div>'+
+        '<div class="card-body" style="padding:14px">'+
+          '<canvas id="chart-cat"></canvas>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+
+  // Destruir charts anteriores
+  if(chartStatus){chartStatus.destroy();chartStatus=null;}
+  if(chartCat){chartCat.destroy();chartCat=null;}
+
+  const apo=((m.apo||0)+(en.apo||0));
+  chartStatus=new Chart(document.getElementById('chart-status'),{
+    type:'doughnut',
+    data:{
+      labels:['Cobertura','Apoio','Extra','Descoberto'],
+      datasets:[{data:[stats.cob,apo,stats.ext,stats.sem],
+        backgroundColor:['#2e7d4f','#d95f1a','#6d3aad','#c0392b'],
+        borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+  const legEl=document.getElementById('chart-status-leg');
+  if(legEl)legEl.innerHTML=[['Cobertura','#2e7d4f'],['Apoio','#d95f1a'],['Extra','#6d3aad'],['Descoberto','#c0392b']].map(([l,c])=>`<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:${c};flex-shrink:0"></div>${l}</div>`).join('');
+
+  chartCat=new Chart(document.getElementById('chart-cat'),{
+    type:'bar',
+    data:{
+      labels:['Coberturas','Apoios','Sem cob.'],
+      datasets:[
+        {label:'M\u00e9dicos',data:[m.cob||0,m.apo||0,m.sem||0],backgroundColor:'#1a5fa6',borderRadius:4},
+        {label:'Enfermeiros',data:[en.cob||0,en.apo||0,en.sem||0],backgroundColor:'#6d3aad',borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},
+      scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{stepSize:1}}}
+    }
+  });
+
+  // Ausências não cobertas
+  document.getElementById('nao-cobertos').innerHTML=naoCobertos.length
+    ?naoCobertos.map(x=>'<div class="nao-cob-item"><div style="flex:1"><div class="nao-cob-eq">'+x.equipe+'</div><div class="nao-cob-det">'+x.turno+' &middot; '+x.cat+' &middot; '+x.dKey+'</div></div><button class="nao-cob-btn" onclick="autorizarExtra(\''+x.equipe+'\',\''+x.turno+'\',\''+x.dKey+'\',\''+x.cat+'\')">Autorizar extra &rarr;</button></div>').join('')
+    :'<div class="empty" style="color:var(--green)">Todas as aus&#234;ncias foram cobertas.</div>';
+}
+
+async function autorizarExtra(equipe,turno,dKey,cat){
+  const prof=prompt('Autorizar extra:\n'+equipe+' - '+turno+' - '+dKey+'\n\nNome do profissional:');
+  if(!prof)return;
+  const motivo=prompt('Motivo da aus\u00eancia:')||'';
+  const p=dKey.split('-');
+  const r=await apiPost({acao:'autorizar_extra',equipe,turno,dias:[p[2]+'/'+p[1]+'/'+p[0]],categoria:cat,tipo:'Plant\u00e3o extra pago',profissional:prof,motivo});
+  if(r.ok){alert('Extra autorizado!');carregarEscala();carregarGestor();}else alert('Erro: '+r.erro);
+}
+
+function slotHTML(d){
+  if(Array.isArray(d)){
+    const valid=d.filter(x=>x&&x.tipo!=='vaga');
+    if(!valid.length)return'<div class="slot vaga"></div>';
+    if(valid.length===1)return slotHTML(valid[0]);
+    return'<div style="display:flex;flex-direction:column;gap:3px">'+valid.map(item=>slotHTML(item)).join('')+'</div>';
+  }
+  if(!d||d.tipo==='vaga')return '<div class="slot vaga"></div>';
+  const tipos={cob:'Cobertura',apo:'Apoio',sem:'Sem cobertura',ext:'Extra autorizado'};
+  const cl=d.cat==='med'?'m&#233;dico':d.cat==='enf'?'enfermeiro':'';
+  const tag=cl?'<span class="pill '+d.cat+'">'+cl+'</span>':'';
+  let h='<div class="slot '+d.tipo+'"><div class="slot-tipo">'+(tipos[d.tipo]||d.tipo)+(d.extra&&d.extra.length?'&nbsp;<span style="font-size:8px;opacity:.65">(+'+(d.extra.length)+')</span>':'')+'</div><div class="slot-nome">'+(d.nome||'&mdash;')+'</div>'+tag+'</div>';
+  if(d.extra&&d.extra.length)d.extra.forEach(e=>{h+=slotHTML(e);});
+  return h;
+}
+
+function tecSlotHTML(d){
+  if(!d||d.tipo==='vaga')return '<div class="slot vaga" style="min-height:38px"></div>';
+  const tipos={'tec-ok':'Coberto','tec-sem':'Descoberto','tec-ext':'Extra autorizado'};
+  return '<div class="slot '+d.tipo+'"><div class="slot-tipo">'+(tipos[d.tipo]||d.tipo)+'</div><div class="slot-nome">'+(d.nome||'&mdash;')+'</div></div>';
+}
+
+function loadHTML(){return '<div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>';}
+
+function showTab(tab){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.nav button').forEach((b,i)=>b.classList.toggle('active',['equipes','feristas','tecnicos','gestor'][i]===tab));
+  if(tab==='gestor')carregarGestor();
+}
+
+function abreviarEquipe(local,turno){
+  if(!local)return'';
+  const ign=['equipe','de','da','do','das','dos','e','a'];
+  const partes=local.split(/[\s\-\/]+/).filter(p=>p.length&&!ign.includes(p.toLowerCase()));
+  const primPalavra=partes.find(p=>!/^\d+$/.test(p))||'';
+  const num=partes.find(p=>/^\d+$/.test(p))||'';
+  const t=turno?(turno.toUpperCase().startsWith('M')?'M':'T'):'';
+  return(primPalavra[0]||'').toUpperCase()+num+t;
+}
+
+// ── Feristas: vista mensal ────────────────────────────────────────────────────
+let ferVistaAtual='semana',dadosFeristasMensal=null,ferMes=null;
+
+function alternarVistaFer(vista){
+  ferVistaAtual=vista;
+  const btnS=document.getElementById('btn-fer-semana');
+  const btnM=document.getElementById('btn-fer-mes');
+  const listW=document.getElementById('feristas-list');
+  const mensalW=document.getElementById('feristas-mensal');
+  if(vista==='semana'){
+    btnS.style.background='var(--green)';btnS.style.color='#fff';btnS.style.borderColor='var(--green)';
+    btnM.style.background='';btnM.style.color='';btnM.style.borderColor='';
+    listW.style.display='block';mensalW.style.display='none';
+  }else{
+    btnM.style.background='var(--green)';btnM.style.color='#fff';btnM.style.borderColor='var(--green)';
+    btnS.style.background='';btnS.style.color='';btnS.style.borderColor='';
+    listW.style.display='none';mensalW.style.display='block';
+    carregarFeristasMensal();
+  }
+}
+
+async function carregarFeristasMensal(){
+  const wrap=document.getElementById('feristas-mensal');
+  wrap.innerHTML=loadHTML();
+  if(!ferMes){const h=new Date();ferMes={ano:h.getFullYear(),mes:h.getMonth()+1};}
+  const{ano,mes}=ferMes;
+  const semanas=getSemanasParaMes(ano,mes);
+  const resultados=await Promise.all(semanas.map(s=>apiGet({acao:'feristas',inicio:s}).catch(()=>null)));
+  // Agrega: {nome: {isoDate: {m: status, t: status}}}
+  const agFer={};const ferOrder=[];
+  // Descobre semana atual para highlight
+  const semAtualISO=semanaParaISO(new Date());
+  semanas.forEach((semInicio,si)=>{
+    const r=resultados[si];if(!r||!r.ok||!r.feristas)return;
+    r.feristas.forEach(f=>{
+      if(!agFer[f.nome]){agFer[f.nome]={cat:f.cat,ini:f.ini||f.nome.substring(0,2).toUpperCase()};ferOrder.push(f.nome);}
+      for(let di=0;di<5;di++){
+        const dDate=new Date(semInicio+'T12:00:00');dDate.setDate(dDate.getDate()+di);
+        const iso=dDate.toISOString().split('T')[0];
+        if(dDate.getMonth()+1!==mes||dDate.getFullYear()!==ano)continue;
+        const slots=f.dias&&f.dias[di]?f.dias[di].slots:[];
+        agFer[f.nome][iso]=slots.length?{tipo:slots[0].tipo,local:slots[0].local||'',turno:slots[0].turno||''}:{tipo:'livre'};
+      }
+    });
+  });
+  dadosFeristasMensal={agFer,ferOrder,ano,mes,semAtualISO};
+  renderFeristasMensal();
+}
+
+function renderFeristasMensal(){
+  const wrap=document.getElementById('feristas-mensal');
+  if(!dadosFeristasMensal||!wrap)return;
+  const{agFer,ferOrder,ano,mes,semAtualISO}=dadosFeristasMensal;
+  const busca=document.getElementById('fer-busca').value.toLowerCase();
+  const catFil=document.getElementById('fer-cat').value;
+  const nomeMes=new Date(ano,mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const diasUteis=getDiasUteisMes(ano,mes);
+
+  // Dias da semana atual para highlight
+  const semAtualDias=new Set();
+  for(let i=0;i<5;i++){const d=new Date(semAtualISO+'T12:00:00');d.setDate(d.getDate()+i);semAtualDias.add(d.toISOString().split('T')[0]);}
+
+  const nav=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <button class="btn-sec" onclick="navegarFerMes(-1)" style="padding:4px 10px;font-size:13px">&#8249;</button>
+    <span style="font-size:13px;font-weight:600;text-transform:capitalize">${nomeMes}</span>
+    <button class="btn-sec" onclick="navegarFerMes(1)" style="padding:4px 10px;font-size:13px">&#8250;</button>
+    <button class="btn-sec" onclick="navegarFerMesHoje()" style="padding:4px 10px;font-size:11px">Hoje</button>
+  </div>`;
+
+  const legCores={cob:'var(--green)',apo:'var(--orange)',ext:'var(--purple)',livre:'#e8eaf0'};
+  const leg=`<div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="leg"><div class="leg-dot" style="background:var(--green);border:none;opacity:.85"></div>Cobertura</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--orange);border:none;opacity:.85"></div>Apoio</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--purple);border:none;opacity:.85"></div>Extra</div>
+    <div class="leg"><div class="leg-dot" style="background:#e8eaf0;border:1px solid var(--border)"></div>Livre</div>
+    <div class="leg"><div style="width:10px;height:10px;border-radius:3px;border:2px solid var(--green);flex-shrink:0"></div>Semana atual</div>
+  </div>`;
+
+  const lista=ferOrder.filter(n=>{
+    const f=agFer[n];
+    if(busca&&!n.toLowerCase().includes(busca))return false;
+    if(catFil!=='todos'&&f.cat!==catFil)return false;
+    return true;
+  });
+
+  if(!lista.length){wrap.innerHTML=nav+leg+'<div class="empty">Nenhum ferista.</div>';return;}
+
+  const hdr=diasUteis.map(iso=>{
+    const d=new Date(iso+'T12:00:00');
+    const isSemAtual=semAtualDias.has(iso);
+    return`<th style="width:26px;padding:1px 1px;text-align:center;${isSemAtual?'background:var(--green-light);':''}">
+      <div style="font-size:8px;color:var(--hint);line-height:1.3">${['D','S','T','Q','Q','S','S'][d.getDay()]}</div>
+      <div style="font-size:9px;font-weight:600;color:var(--muted)">${d.getDate()}</div>
+    </th>`;
+  }).join('');
+
+  const rows=lista.map(n=>{
+    const f=agFer[n];
+    const cells=diasUteis.map(iso=>{
+      const raw=f[iso]||{tipo:'livre'};
+      const s=typeof raw==='string'?raw:(raw.tipo||'livre');
+      const bg=legCores[s]||'#e8eaf0';
+      const isSemAtual=semAtualDias.has(iso);
+      const brd=isSemAtual?'2px solid var(--green)':'2px solid transparent';
+      const abr=(s!=='livre'&&raw.local)?abreviarEquipe(raw.local,raw.turno):'';
+      const tAbr=(s!=='livre'&&raw.turno)?(raw.turno.toUpperCase().startsWith('M')?'M':'T'):'';
+      const dLabel=new Date(iso+'T12:00:00');
+      const lbl=`${n} — ${dLabel.getDate()}/${dLabel.getMonth()+1}: ${s==='livre'?'Livre':s==='cob'?'Cobertura':s==='apo'?'Apoio':'Extra'}${raw.local?' · '+raw.local:''}${raw.turno?' · '+(raw.turno==='MANHA'?'Manhã':'Tarde'):''}`;
+      const txtColor=s==='cob'?'rgba(255,255,255,.95)':s==='apo'?'rgba(255,255,255,.95)':s==='ext'?'rgba(255,255,255,.95)':'rgba(0,0,0,.5)';
+      return`<td style="padding:1px 2px;${isSemAtual?'background:var(--green-light);':''}"><div title="${lbl}" style="width:28px;height:22px;border-radius:4px;background:${bg};border:${brd};opacity:${s==='livre'?'0.45':'1'};display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden">${abr?`<span style="font-size:7px;font-weight:700;color:${txtColor};line-height:1.1;letter-spacing:-.3px;max-width:26px;overflow:hidden;text-overflow:clip;white-space:nowrap;text-align:center">${abr}</span><span style="font-size:6px;font-weight:600;color:${txtColor};opacity:.8;line-height:1">${tAbr}</span>`:''}</div></td>`;
+    }).join('');
+    const catCls=f.cat==='medico'?'med':'enf';
+    return`<tr><td style="white-space:nowrap;padding:3px 12px 3px 0;min-width:160px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="fer-av ${catCls}" style="width:24px;height:24px;font-size:9px;flex-shrink:0">${f.ini||n.substring(0,2).toUpperCase()}</div>
+        <span style="font-size:11px;font-weight:500;color:var(--text)">${n}</span>
+      </div>
+    </td>${cells}</tr>`;
+  }).join('');
+
+  wrap.innerHTML=nav+leg+`<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff">
+    <table style="border-collapse:collapse;white-space:nowrap">
+      <thead><tr><th style="min-width:160px;text-align:left"></th>${hdr}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function navegarFerMes(dir){
+  if(!ferMes){const h=new Date();ferMes={ano:h.getFullYear(),mes:h.getMonth()+1};}
+  let{ano,mes}=ferMes;mes+=dir;
+  if(mes>12){mes=1;ano++;}if(mes<1){mes=12;ano--;}
+  ferMes={ano,mes};dadosFeristasMensal=null;carregarFeristasMensal();
+}
+function navegarFerMesHoje(){ferMes=null;dadosFeristasMensal=null;carregarFeristasMensal();}
+
+// ── Mapa mensal ──────────────────────────────────────────────────────────────
+let mapaData=null,mapaMes=null;
+
+function getMesAtual(){const h=new Date();return{ano:h.getFullYear(),mes:h.getMonth()+1};}
+
+function getDiasUteisMes(ano,mes){
+  const dias=[];const d=new Date(ano,mes-1,1);
+  while(d.getMonth()===mes-1){const dow=d.getDay();if(dow>=1&&dow<=5)dias.push(d.toISOString().split('T')[0]);d.setDate(d.getDate()+1);}
+  return dias;
+}
+
+function getSemanasParaMes(ano,mes){
+  const set=new Set();const d=new Date(ano,mes-1,1);const fim=new Date(ano,mes,0);
+  while(d<=fim){
+    const dow=d.getDay();const seg=new Date(d);seg.setDate(d.getDate()-(dow===0?6:dow-1));
+    set.add(seg.toISOString().split('T')[0]);d.setDate(d.getDate()+1);
+  }
+  return Array.from(set).sort();
+}
+
+function worstMapaStatus(atual,tipo){
+  if(!tipo||tipo==='vaga')return atual||'v';
+  const novo=tipo==='sem'?'r':'l';
+  if(atual==='r')return'r';
+  if(novo==='r')return'r';
+  return'l';
+}
+
+function processSlotParaMapa(slot,dest){
+  if(!slot||slot.tipo==='vaga')return;
+  const k=slot.cat==='med'?'med':slot.cat==='enf'?'enf':null;
+  if(k)dest[k]=worstMapaStatus(dest[k],slot.tipo);
+  if(slot.extra)slot.extra.forEach(e=>processSlotParaMapa(e,dest));
+}
+
+async function carregarMapaMensal(){
+  const wrap=document.getElementById('mapa-mensal-wrap');if(!wrap)return;
+  wrap.innerHTML=loadHTML();
+  if(!mapaMes)mapaMes=getMesAtual();
+  const{ano,mes}=mapaMes;
+  const semanas=getSemanasParaMes(ano,mes);
+  const resultados=await Promise.all(semanas.map(s=>apiGet({acao:'escala',inicio:s}).catch(()=>null)));
+  const agregado={};const equipeOrder=[];
+  semanas.forEach((semInicio,si)=>{
+    const r=resultados[si];if(!r||!r.ok||!r.equipes)return;
+    r.equipes.forEach(eq=>{
+      if(!agregado[eq.equipe]){agregado[eq.equipe]={};equipeOrder.push(eq.equipe);}
+      for(let di=0;di<5;di++){
+        const dDate=new Date(semInicio+'T12:00:00');dDate.setDate(dDate.getDate()+di);
+        const iso=dDate.toISOString().split('T')[0];
+        if(dDate.getMonth()+1!==mes||dDate.getFullYear()!==ano)continue;
+        if(!agregado[eq.equipe][iso])agregado[eq.equipe][iso]={med:'v',enf:'v'};
+        eq.turnos.forEach(t=>{if(t.dias&&t.dias[di])processSlotParaMapa(t.dias[di],agregado[eq.equipe][iso]);});
+      }
+    });
+  });
+  mapaData={agregado,equipeOrder,ano,mes};
+  renderMapaMensal();
+  renderMapaRegional();
+}
+
+function renderMapaMensal(){
+  const wrap=document.getElementById('mapa-mensal-wrap');if(!wrap||!mapaData)return;
+  const{agregado,equipeOrder,ano,mes}=mapaData;
+  const diasUteis=getDiasUteisMes(ano,mes);
+  const nomeMes=new Date(ano,mes-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  const nav=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <button class="btn-sec" onclick="navegarMapa(-1)" style="padding:4px 10px;font-size:13px">&#8249;</button>
+    <span style="font-size:13px;font-weight:600;text-transform:capitalize">${nomeMes}</span>
+    <button class="btn-sec" onclick="navegarMapa(1)" style="padding:4px 10px;font-size:13px">&#8250;</button>
+    <button class="btn-sec" onclick="navegarMapaHoje()" style="padding:4px 10px;font-size:11px">Hoje</button>
+  </div>`;
+
+  const leg=`<div style="display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap">
+    <div class="leg"><div class="leg-dot" style="background:rgba(46,125,79,.3);border:1px solid var(--green-border)"></div>Sem aus&#234;ncia</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--orange);border:none;opacity:.85"></div>Coberto</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--red);border:none;opacity:.85"></div>Descoberto</div>
+  </div>`;
+
+  function renderGrid(catKey,catLabel,catColor){
+    if(!diasUteis.length||!equipeOrder.length)return'<div class="empty">Sem dados para este m&#234;s.</div>';
+    const hdr=diasUteis.map(iso=>{
+      const d=new Date(iso+'T12:00:00');
+      return`<th style="width:24px;padding:1px 1px;text-align:center"><div style="font-size:8px;color:var(--hint);line-height:1.3">${['D','S','T','Q','Q','S','S'][d.getDay()]}</div><div style="font-size:9px;font-weight:600;color:var(--muted)">${d.getDate()}</div></th>`;
+    }).join('');
+    const rows=equipeOrder.map(eq=>{
+      const diasEq=agregado[eq]||{};
+      const cells=diasUteis.map(iso=>{
+        const d=diasEq[iso];
+        const s=(d&&d[catKey])||'v';
+        const bg=s==='r'?'var(--red)':s==='l'?'var(--orange)':'rgba(46,125,79,.25)';
+        const dObj=new Date(iso+'T12:00:00');
+        const titulo=`${eq} — ${dObj.getDate()}/${dObj.getMonth()+1}: ${s==='r'?'Descoberto':s==='l'?'Coberto':'Sem ausência'}`;
+        return`<td style="padding:1px 1px"><div title="${titulo}" style="width:22px;height:16px;border-radius:3px;background:${bg};cursor:default"></div></td>`;
+      }).join('');
+      return`<tr><td style="white-space:nowrap;padding:3px 12px 3px 0;font-size:11px;font-weight:500;color:var(--text);min-width:150px">${eq}</td>${cells}</tr>`;
+    }).join('');
+    return`<div style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${catColor};margin-bottom:8px">${catLabel}</div>
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff">
+        <table style="border-collapse:collapse;white-space:nowrap">
+          <thead><tr><th style="min-width:150px;text-align:left"></th>${hdr}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  wrap.innerHTML=nav+leg
+    +renderGrid('med','M&#233;dicos','var(--blue)')
+    +renderGrid('enf','Enfermeiros','var(--purple)');
+}
+
+function navegarMapa(dir){
+  if(!mapaMes)mapaMes=getMesAtual();
+  let{ano,mes}=mapaMes;mes+=dir;
+  if(mes>12){mes=1;ano++;}if(mes<1){mes=12;ano--;}
+  mapaMes={ano,mes};carregarMapaMensal();
+}
+function navegarMapaHoje(){mapaMes=getMesAtual();carregarMapaMensal();}
+
+// ── Mapa de regionais ─────────────────────────────────────────────────────────
+const REGIONAIS={
+  'venda-nova':{nome:'Venda Nova',cx:318,cy:60,d:'M232,10 L408,10 L420,32 L412,108 L300,115 L254,94 L234,52 Z'},
+  'norte':{nome:'Norte',cx:168,cy:83,d:'M92,28 L232,10 L234,52 L254,94 L224,132 L158,142 L102,128 L88,75 Z'},
+  'nordeste':{nome:'Nordeste',cx:355,cy:170,d:'M298,115 L412,108 L426,130 L420,210 L368,232 L292,216 L278,168 Z'},
+  'pampulha':{nome:'Pampulha',cx:198,cy:160,d:'M102,128 L158,142 L224,132 L254,94 L298,115 L278,168 L258,194 L188,200 L132,188 L118,158 Z'},
+  'noroeste':{nome:'Noroeste',cx:62,cy:128,d:'M12,42 L92,28 L88,75 L102,128 L118,158 L80,194 L12,194 Z'},
+  'leste':{nome:'Leste',cx:342,cy:280,d:'M258,194 L278,168 L292,216 L368,232 L420,210 L428,268 L412,355 L338,378 L272,342 L258,275 Z'},
+  'oeste':{nome:'Oeste',cx:72,cy:248,d:'M12,200 L80,194 L118,158 L132,188 L140,222 L140,285 L100,315 L12,294 Z'},
+  'centro-sul':{nome:'Centro-Sul',cx:198,cy:290,d:'M132,188 L188,200 L258,194 L258,275 L272,342 L250,372 L195,378 L138,360 L128,305 L140,285 L140,222 Z'},
+  'barreiro':{nome:'Barreiro',cx:76,cy:372,d:'M12,294 L100,315 L128,305 L138,360 L142,418 L78,448 L24,422 L12,360 Z'}
+};
+
+function getRegionalDoEquipe(nome){
+  const n=nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const mapa=[
+    ['venda nova','venda-nova'],['vendanova','venda-nova'],['vn ','venda-nova'],
+    ['nordeste','nordeste'],
+    ['noroeste','noroeste'],
+    ['norte','norte'],
+    ['pampulha','pampulha'],
+    ['leste','leste'],
+    ['centro-sul','centro-sul'],['centrosul','centro-sul'],['centro sul','centro-sul'],
+    ['oeste','oeste'],
+    ['barreiro','barreiro']
+  ];
+  for(const[kw,reg]of mapa){if(n.includes(kw))return reg;}
+  return null;
+}
+
+function renderMapaRegional(){
+  const wrap=document.getElementById('mapa-regional-wrap');if(!wrap)return;
+  const statusReg={};Object.keys(REGIONAIS).forEach(r=>statusReg[r]='sem-dados');
+  if(mapaData&&mapaData.agregado){
+    const{agregado,equipeOrder}=mapaData;
+    equipeOrder.forEach(eq=>{
+      const reg=getRegionalDoEquipe(eq);if(!reg)return;
+      const dias=agregado[eq]||{};
+      let pior='verde';
+      Object.values(dias).forEach(d=>{
+        if(!d)return;
+        ['med','enf'].forEach(cat=>{
+          const s=d[cat];
+          if(s==='r')pior='vermelho';
+          else if(s==='l'&&pior!=='vermelho')pior='laranja';
+        });
+      });
+      const atual=statusReg[reg];
+      if(atual==='sem-dados')statusReg[reg]=pior;
+      else if(pior==='vermelho')statusReg[reg]='vermelho';
+      else if(pior==='laranja'&&atual==='verde')statusReg[reg]='laranja';
+    });
+  }
+  const cores={
+    'verde':{fill:'#c8eedd',stroke:'#2e7d4f',text:'#1a5c35'},
+    'laranja':{fill:'#fde3c8',stroke:'#d95f1a',text:'#7a3010'},
+    'vermelho':{fill:'#fbd5d3',stroke:'#c0392b',text:'#7a1a15'},
+    'sem-dados':{fill:'#eaecf2',stroke:'#b0bace',text:'#6b7a96'}
+  };
+  const paths=Object.entries(REGIONAIS).map(([key,reg])=>{
+    const c=cores[statusReg[key]];
+    const label=statusReg[key]==='verde'?'Sem aus\u00eancias':statusReg[key]==='laranja'?'Aus\u00eancias cobertas':statusReg[key]==='vermelho'?'Aus\u00eancias sem cobertura':'Sem dados';
+    return`<path d="${reg.d}" fill="${c.fill}" stroke="${c.stroke}" stroke-width="1.5" stroke-linejoin="round" style="cursor:default"><title>${reg.nome}: ${label}</title></path>
+<text x="${reg.cx}" y="${reg.cy}" text-anchor="middle" dominant-baseline="middle" style="font-size:9px;font-weight:700;fill:${c.text};font-family:sans-serif;pointer-events:none">${reg.nome}</text>`;
+  }).join('');
+  const legHTML=`<div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+    <div class="leg"><div class="leg-dot" style="background:#c8eedd;border:1px solid #2e7d4f"></div>Sem aus&#234;ncias</div>
+    <div class="leg"><div class="leg-dot" style="background:#fde3c8;border:1px solid #d95f1a"></div>Coberto</div>
+    <div class="leg"><div class="leg-dot" style="background:#fbd5d3;border:1px solid #c0392b"></div>Descoberto</div>
+    <div class="leg"><div class="leg-dot" style="background:#eaecf2;border:1px solid #b0bace"></div>Sem dados</div>
+  </div>`;
+  wrap.innerHTML=legHTML+`<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;justify-content:center">
+    <svg viewBox="0 0 440 460" style="width:100%;max-width:380px;height:auto">${paths}</svg>
+  </div>`;
+}
+
+authReady(inicializar);
+</script>
+</body>
+</html>
